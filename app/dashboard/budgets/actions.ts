@@ -449,14 +449,16 @@ export type DuePayment = {
   name: string
   amount: number
   dueDate: string
-  sourceType: 'debt' | 'subscription' | 'recurring_expense'
+  sourceType: 'debt' | 'subscription' | 'recurring_expense' | 'manual'
 }
 
 // Reuses the same BudgetItem projection the Budget view runs off of
-// (ensure*BudgetItems above), filtered to items that represent a real
-// scheduled obligation — a debt, a subscription, or a recurring expense —
-// as opposed to a manually budgeted category amount. Already-paid-off debts
-// never appear here: ensureDebtBudgetItems only projects debts with
+// (ensure*BudgetItems above). Includes every BudgetItem in range, not just
+// ones tied to a debt/subscription/recurring expense — a BudgetItem with no
+// such link is a one-off expense the user planned for a specific date (e.g.
+// "Metro" or "Almuerzo" added by hand from the Budget view), which is just
+// as much a planned payment as a recurring one. Already-paid-off debts never
+// appear here: ensureDebtBudgetItems only projects debts with
 // remainingBalance > 0, and paying one off deletes its future BudgetItems.
 export async function getDuePaymentsForUser(
   userId: string,
@@ -473,11 +475,6 @@ export async function getDuePaymentsForUser(
     where: {
       userId,
       date: { gte: startDate, lte: endDate },
-      OR: [
-        { subscriptionId: { not: null } },
-        { recurringExpenseId: { not: null } },
-        { debtId: { not: null } },
-      ],
     },
     include: { subscription: true, recurringExpense: true, debt: true },
     orderBy: { date: 'asc' },
@@ -506,14 +503,23 @@ export async function getDuePaymentsForUser(
         sourceType: 'subscription',
       }
     }
-    // The OR filter above guarantees recurringExpense is set here.
+    if (item.recurringExpense) {
+      return {
+        id: item.id,
+        type: 'recurring_expense',
+        name: item.recurringExpense.name,
+        amount,
+        dueDate,
+        sourceType: 'recurring_expense',
+      }
+    }
     return {
       id: item.id,
-      type: 'recurring_expense',
-      name: item.recurringExpense!.name,
+      type: 'planned_expense',
+      name: item.description,
       amount,
       dueDate,
-      sourceType: 'recurring_expense',
+      sourceType: 'manual',
     }
   })
 

@@ -289,7 +289,7 @@ const handler = createMcpHandler(
       {
         title: 'Get budget overview',
         description:
-          "Get budgeted vs. actual spending per expense category for a given month. Use this to answer 'am I over budget' or 'how much do I have left in category X this month'. For a forward-looking 'can I afford this until payday' question, use get_cash_runway instead, which already factors this in.",
+          "Get budgeted vs. actual spending per expense category for a given month — totals only, not broken down by day. Use this to answer 'am I over budget' or 'how much do I have left in category X this month'. For 'what did I plan to spend tomorrow/this week' or any other date-specific planned-expense question, this tool cannot answer it — use get_due_payments or get_daily_financial_agenda instead. For a forward-looking 'can I afford this until payday' question, use get_cash_runway instead, which already factors this in.",
         inputSchema: z.object({
           year: z.number().int(),
           month: z.number().int().min(1).max(12),
@@ -343,7 +343,7 @@ const handler = createMcpHandler(
       {
         title: 'Get due payments in a date range',
         description:
-          "List every payment coming due between two dates — loan and credit card minimum payments, subscriptions, and other recurring/scheduled expenses — in one call, with a total. Use this instead of separately calling list_debts + list_subscriptions whenever the user asks something like 'what do I owe this week' or 'what's due between these dates'; it already excludes debts that are fully paid off. For a single day split by source type (plus scheduled income), use get_daily_financial_agenda. For 'can I afford it until then', use get_cash_runway.",
+          "List every payment planned/coming due between two dates — loan and credit card minimum payments, subscriptions, recurring expenses, AND one-off expenses the user planned for a specific date from the Budget view (sourceType: manual) — in one call, with a total. This is the budget broken down by day, not just by category: use it whenever the user asks something like 'what do I owe this week', 'what's due between these dates', or 'what did I plan to spend tomorrow' instead of reading get_budget_overview's per-category totals (which don't say which day within the month). Already excludes debts that are fully paid off. For a single day split by source type (plus scheduled income), use get_daily_financial_agenda. For 'can I afford it until then', use get_cash_runway.",
         inputSchema: z.object({
           startDate: z.string().describe('ISO date, e.g. 2026-08-13'),
           endDate: z.string().describe('ISO date, e.g. 2026-08-20'),
