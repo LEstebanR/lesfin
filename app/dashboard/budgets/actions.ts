@@ -4,6 +4,7 @@ import { parseCurrencyInput } from '@/lib/currency'
 import { FREE_LIMITS, getUserPlan, monthsBack } from '@/lib/plan-limits'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from '@/lib/session'
+import { getTodayInTimezone } from '@/lib/user-date'
 import {
   positiveAmount,
   requiredString,
@@ -406,6 +407,274 @@ export async function getBudgetItems(month: number, year: number) {
     categoryName: category.name,
     subcategoryName: subcategory?.name ?? null,
   }))
+}
+
+function monthsBetween(
+  start: Date,
+  end: Date
+): Array<{ month: number; year: number }> {
+  const months: Array<{ month: number; year: number }> = []
+  let year = start.getUTCFullYear()
+  let month = start.getUTCMonth() + 1
+  const endYear = end.getUTCFullYear()
+  const endMonth = end.getUTCMonth() + 1
+  while (year < endYear || (year === endYear && month <= endMonth)) {
+    months.push({ month, year })
+    month += 1
+    if (month > 12) {
+      month = 1
+      year += 1
+    }
+  }
+  return months
+}
+
+async function ensureBudgetItemsForRange(
+  userId: string,
+  startDate: Date,
+  endDate: Date
+) {
+  for (const { month, year } of monthsBetween(startDate, endDate)) {
+    await Promise.all([
+      ensureSubscriptionBudgetItems(userId, month, year),
+      ensureRecurringExpenseBudgetItems(userId, month, year),
+      ensureDebtBudgetItems(userId, month, year),
+    ])
+  }
+}
+
+export type DuePayment = {
+  id: string
+  type: string
+  name: string
+  amount: number
+  dueDate: string
+  sourceType: 'debt' | 'subscription' | 'recurring_expense'
+}
+
+// Reuses the same BudgetItem projection the Budget view runs off of
+// (ensure*BudgetItems above), filtered to items that represent a real
+// scheduled obligation — a debt, a subscription, or a recurring expense —
+// as opposed to a manually budgeted category amount. Already-paid-off debts
+// never appear here: ensureDebtBudgetItems only projects debts with
+// remainingBalance > 0, and paying one off deletes its future BudgetItems.
+export async function getDuePaymentsForUser(
+  userId: string,
+  startDate: Date,
+  endDate: Date
+): Promise<{ payments: DuePayment[]; total: number }> {
+  if (startDate > endDate) {
+    throw new Error('startDate must be on or before endDate')
+  }
+
+  await ensureBudgetItemsForRange(userId, startDate, endDate)
+
+  const items = await prisma.budgetItem.findMany({
+    where: {
+      userId,
+      date: { gte: startDate, lte: endDate },
+      OR: [
+        { subscriptionId: { not: null } },
+        { recurringExpenseId: { not: null } },
+        { debtId: { not: null } },
+      ],
+    },
+    include: { subscription: true, recurringExpense: true, debt: true },
+    orderBy: { date: 'asc' },
+  })
+
+  const payments: DuePayment[] = items.map((item) => {
+    const dueDate = item.date.toISOString().slice(0, 10)
+    const amount = Number(item.amount)
+    if (item.debt) {
+      return {
+        id: item.id,
+        type: item.debt.type,
+        name: item.debt.name,
+        amount,
+        dueDate,
+        sourceType: 'debt',
+      }
+    }
+    if (item.subscription) {
+      return {
+        id: item.id,
+        type: 'subscription',
+        name: item.subscription.name,
+        amount,
+        dueDate,
+        sourceType: 'subscription',
+      }
+    }
+    // The OR filter above guarantees recurringExpense is set here.
+    return {
+      id: item.id,
+      type: 'recurring_expense',
+      name: item.recurringExpense!.name,
+      amount,
+      dueDate,
+      sourceType: 'recurring_expense',
+    }
+  })
+
+  return {
+    payments,
+    total: payments.reduce((sum, payment) => sum + payment.amount, 0),
+  }
+}
+
+type AgendaItem = {
+  id: string
+  name: string
+  amount: number
+  dueDate: string
+}
+
+// Same underlying projection as getDuePaymentsForUser, split into the
+// separate arrays a "what's due today/this week" question needs. No
+// scheduled-income model exists yet (Subscription/RecurringExpense only
+// ever represent expenses), so scheduledIncome always comes back empty —
+// the shape is here so it can be filled in later without another schema
+// change on the MCP side.
+export async function getDailyFinancialAgendaForUser(
+  userId: string,
+  date: Date
+) {
+  const dayStart = new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
+  )
+  const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000)
+
+  await ensureBudgetItemsForRange(userId, dayStart, dayStart)
+
+  const items = await prisma.budgetItem.findMany({
+    where: { userId, date: { gte: dayStart, lt: dayEnd } },
+    include: { subscription: true, recurringExpense: true, debt: true },
+  })
+
+  const duePayments: AgendaItem[] = items
+    .filter((item) => item.debt)
+    .map((item) => ({
+      id: item.id,
+      name: item.debt!.name,
+      amount: Number(item.amount),
+      dueDate: dayStart.toISOString().slice(0, 10),
+    }))
+
+  const subscriptions: AgendaItem[] = items
+    .filter((item) => item.subscription)
+    .map((item) => ({
+      id: item.id,
+      name: item.subscription!.name,
+      amount: Number(item.amount),
+      dueDate: dayStart.toISOString().slice(0, 10),
+    }))
+
+  const scheduledExpenses: AgendaItem[] = items
+    .filter((item) => !item.debtId && !item.subscriptionId)
+    .map((item) => ({
+      id: item.id,
+      name: item.recurringExpense?.name ?? item.description,
+      amount: Number(item.amount),
+      dueDate: dayStart.toISOString().slice(0, 10),
+    }))
+
+  const scheduledIncome: AgendaItem[] = []
+
+  const totalExpectedExpenses = [
+    ...duePayments,
+    ...subscriptions,
+    ...scheduledExpenses,
+  ].reduce((sum, item) => sum + item.amount, 0)
+
+  return {
+    date: dayStart.toISOString().slice(0, 10),
+    duePayments,
+    subscriptions,
+    scheduledExpenses,
+    scheduledIncome,
+    totalExpectedExpenses,
+    totalExpectedIncome: 0,
+  }
+}
+
+// projectedRemaining = availableBalance - remainingBudget - scheduledPayments
+//   - availableBalance: current cash across non-archived accounts, minus any
+//     the caller excluded (e.g. an emergency fund that shouldn't count as
+//     spendable).
+//   - remainingBudget: what's left of this month's category budgets
+//     (budgeted - spent, floored at 0, only for categories that have a
+//     budgeted amount) — money that's still "earmarked" even though it
+//     hasn't been spent yet, so it's subtracted rather than added.
+//   - scheduledPayments: getDuePaymentsForUser's total between today and
+//     untilDate (debts/subscriptions/recurring expenses coming due).
+// status: 'insufficient' if projectedRemaining < 0; 'tight' if it's positive
+// but under 10% of availableBalance (an adjustable cushion threshold);
+// 'comfortable' otherwise.
+export async function getCashRunwayForUser(
+  userId: string,
+  untilDate: Date,
+  excludeAccounts?: string[]
+) {
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { id: userId },
+    select: { timezone: true },
+  })
+  const today = new Date(`${getTodayInTimezone(user.timezone)}T00:00:00.000Z`)
+
+  const exclude = new Set(
+    (excludeAccounts ?? []).map((value) => value.toLowerCase())
+  )
+  const accounts = await prisma.account.findMany({
+    where: { userId, isArchived: false },
+  })
+  const availableBalance = accounts
+    .filter(
+      (account) =>
+        !exclude.has(account.id.toLowerCase()) &&
+        !exclude.has(account.name.toLowerCase())
+    )
+    .reduce((sum, account) => sum + Number(account.currentBalance), 0)
+
+  const budget = await getBudgetOverviewForUser(
+    userId,
+    today.getUTCMonth() + 1,
+    today.getUTCFullYear()
+  )
+  const remainingBudget = budget.reduce((sum, item) => {
+    if (item.amount === null) return sum
+    return sum + Math.max(item.amount - item.spent, 0)
+  }, 0)
+
+  const { total: scheduledPayments } = await getDuePaymentsForUser(
+    userId,
+    today,
+    untilDate
+  )
+
+  const projectedRemaining =
+    availableBalance - remainingBudget - scheduledPayments
+  const daysRemaining = Math.max(
+    0,
+    Math.round((untilDate.getTime() - today.getTime()) / (24 * 60 * 60 * 1000))
+  )
+
+  const tightThreshold = availableBalance * 0.1
+  const status: 'comfortable' | 'tight' | 'insufficient' =
+    projectedRemaining < 0
+      ? 'insufficient'
+      : projectedRemaining < tightThreshold
+        ? 'tight'
+        : 'comfortable'
+
+  return {
+    availableBalance,
+    remainingBudget,
+    scheduledPayments,
+    projectedRemaining,
+    daysRemaining,
+    status,
+  }
 }
 
 export async function createBudgetItem(formData: FormData) {

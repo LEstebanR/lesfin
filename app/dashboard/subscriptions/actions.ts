@@ -1,5 +1,10 @@
 'use server'
 
+import {
+  type CreateSubscriptionInput,
+  createSubscriptionSchema,
+  updateSubscriptionSchema,
+} from '@/app/dashboard/subscriptions/schemas'
 import { createTransaction } from '@/app/dashboard/transactions/actions'
 import { parseCurrencyInput } from '@/lib/currency'
 import {
@@ -9,12 +14,7 @@ import {
 } from '@/lib/plan-limits'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from '@/lib/session'
-import {
-  positiveAmount,
-  requiredString,
-  uuidField,
-  validDate,
-} from '@/lib/validation'
+import { positiveAmount, uuidField, validDate } from '@/lib/validation'
 import { z } from 'zod'
 
 function parseDueDay(value: FormDataEntryValue | null): number {
@@ -36,35 +36,6 @@ function parseFrequency(
 ): 'yearly' | 'monthly' {
   return value === 'yearly' ? 'yearly' : 'monthly'
 }
-
-const subscriptionFieldsSchema = z.object({
-  name: requiredString,
-  categoryId: uuidField,
-  subcategoryId: uuidField.nullable(),
-  amount: positiveAmount,
-  frequency: z.enum(['monthly', 'yearly']),
-  dueDay: z.number().int().min(1).max(31),
-  dueMonth: z.number().int().min(1).max(12).nullable(),
-  accountId: uuidField.nullable(),
-  debtId: uuidField.nullable(),
-})
-
-const paymentSourceRefinement = (data: {
-  accountId: string | null
-  debtId: string | null
-}) => !!data.accountId || !!data.debtId
-
-const updateSubscriptionSchema = subscriptionFieldsSchema.refine(
-  paymentSourceRefinement,
-  { message: 'An account or credit card is required', path: ['accountId'] }
-)
-
-const createSubscriptionSchema = subscriptionFieldsSchema
-  .extend({ startDate: validDate })
-  .refine(paymentSourceRefinement, {
-    message: 'An account or credit card is required',
-    path: ['accountId'],
-  })
 
 export async function getSubscriptionsForUser(userId: string) {
   const plan = await getUserPlan(userId)
@@ -95,14 +66,14 @@ export async function getSubscriptions() {
   return getSubscriptionsForUser(session.user.id)
 }
 
-export async function createSubscription(formData: FormData) {
-  const session = await getServerSession()
-  if (!session) throw new Error('Not authenticated')
-
-  const plan = await getUserPlan(session.user.id)
+export async function createSubscriptionForUser(
+  userId: string,
+  input: CreateSubscriptionInput
+) {
+  const plan = await getUserPlan(userId)
   if (plan !== 'PRO') {
     const activeCount = await prisma.subscription.count({
-      where: { userId: session.user.id, isActive: true },
+      where: { userId, isActive: true },
     })
     if (activeCount >= FREE_LIMITS.subscriptions) {
       throw new Error(
@@ -111,18 +82,59 @@ export async function createSubscription(formData: FormData) {
     }
   }
 
-  const frequency = parseFrequency(formData.get('frequency'))
   const {
     name,
     categoryId,
     subcategoryId,
     amount,
+    frequency,
     dueDay,
     dueMonth,
     accountId,
     debtId,
     startDate,
-  } = createSubscriptionSchema.parse({
+    isActive,
+  } = input
+
+  await prisma.category.findFirstOrThrow({
+    where: { id: categoryId, userId },
+  })
+  if (accountId) {
+    await prisma.account.findFirstOrThrow({
+      where: { id: accountId, userId },
+    })
+  } else if (debtId) {
+    await prisma.debt.findFirstOrThrow({
+      where: { id: debtId, userId, type: 'credit_card' },
+    })
+  }
+
+  const subscription = await prisma.subscription.create({
+    data: {
+      userId,
+      name,
+      categoryId,
+      subcategoryId,
+      amount,
+      frequency,
+      dueDay,
+      dueMonth,
+      accountId,
+      debtId,
+      startDate,
+      isActive: isActive ?? true,
+    },
+  })
+
+  return { ...subscription, amount: Number(subscription.amount) }
+}
+
+export async function createSubscription(formData: FormData) {
+  const session = await getServerSession()
+  if (!session) throw new Error('Not authenticated')
+
+  const frequency = parseFrequency(formData.get('frequency'))
+  const parsed = createSubscriptionSchema.parse({
     name: formData.get('name'),
     categoryId: formData.get('categoryId'),
     subcategoryId: (formData.get('subcategoryId') as string) || null,
@@ -136,95 +148,75 @@ export async function createSubscription(formData: FormData) {
     startDate: new Date(formData.get('startDate') as string),
   })
 
-  await prisma.category.findFirstOrThrow({
-    where: { id: categoryId, userId: session.user.id },
-  })
-  if (accountId) {
-    await prisma.account.findFirstOrThrow({
-      where: { id: accountId, userId: session.user.id },
-    })
-  } else if (debtId) {
-    await prisma.debt.findFirstOrThrow({
-      where: { id: debtId, userId: session.user.id, type: 'credit_card' },
-    })
-  }
-
-  const subscription = await prisma.subscription.create({
-    data: {
-      userId: session.user.id,
-      name,
-      categoryId,
-      subcategoryId,
-      amount,
-      frequency,
-      dueDay,
-      dueMonth,
-      accountId,
-      debtId,
-      startDate,
-    },
-  })
-
-  return { ...subscription, amount: Number(subscription.amount) }
+  return createSubscriptionForUser(session.user.id, parsed)
 }
 
-export async function updateSubscription(id: string, formData: FormData) {
-  const session = await getServerSession()
-  if (!session) throw new Error('Not authenticated')
+export type SubscriptionPatch = {
+  name?: string
+  categoryId?: string
+  subcategoryId?: string | null
+  amount?: number
+  frequency?: 'monthly' | 'yearly'
+  dueDay?: number
+  dueMonth?: number | null
+  accountId?: string | null
+  debtId?: string | null
+  isActive?: boolean
+}
 
-  const frequency = parseFrequency(formData.get('frequency'))
-  const {
-    name,
-    categoryId,
-    subcategoryId,
-    amount,
-    dueDay,
-    dueMonth,
-    accountId,
-    debtId,
-  } = updateSubscriptionSchema.parse({
-    name: formData.get('name'),
-    categoryId: formData.get('categoryId'),
-    subcategoryId: (formData.get('subcategoryId') as string) || null,
-    amount: parseCurrencyInput(formData.get('amount')),
+// Partial update, same "naming either accountId or debtId replaces the
+// whole source pair" rule as updateTransactionForUser — see the comment
+// there. startDate is intentionally not patchable, same as the dashboard's
+// edit form: a subscription's start date is fixed at creation.
+export async function updateSubscriptionForUser(
+  userId: string,
+  id: string,
+  patch: SubscriptionPatch
+) {
+  const existing = await prisma.subscription.findFirstOrThrow({
+    where: { id, userId },
+  })
+
+  const changingSource = 'accountId' in patch || 'debtId' in patch
+  const frequency =
+    patch.frequency ?? (existing.frequency as 'monthly' | 'yearly')
+  const merged = updateSubscriptionSchema.parse({
+    name: patch.name ?? existing.name,
+    categoryId: patch.categoryId ?? existing.categoryId,
+    subcategoryId:
+      'subcategoryId' in patch
+        ? (patch.subcategoryId ?? null)
+        : existing.subcategoryId,
+    amount: patch.amount ?? Number(existing.amount),
     frequency,
-    dueDay: parseDueDay(formData.get('dueDay')),
+    dueDay: patch.dueDay ?? existing.dueDay ?? 1,
     dueMonth:
-      frequency === 'yearly' ? parseDueMonth(formData.get('dueMonth')) : null,
-    accountId: (formData.get('accountId') as string) || null,
-    debtId: (formData.get('debtId') as string) || null,
+      frequency === 'yearly'
+        ? (patch.dueMonth ?? existing.dueMonth ?? 1)
+        : null,
+    accountId: changingSource ? (patch.accountId ?? null) : existing.accountId,
+    debtId: changingSource ? (patch.debtId ?? null) : existing.debtId,
   })
 
-  await prisma.subscription.findFirstOrThrow({
-    where: { id, userId: session.user.id },
-  })
   await prisma.category.findFirstOrThrow({
-    where: { id: categoryId, userId: session.user.id },
+    where: { id: merged.categoryId, userId },
   })
-  if (accountId) {
+  if (merged.accountId) {
     await prisma.account.findFirstOrThrow({
-      where: { id: accountId, userId: session.user.id },
+      where: { id: merged.accountId, userId },
     })
-  } else if (debtId) {
+  } else if (merged.debtId) {
     await prisma.debt.findFirstOrThrow({
-      where: { id: debtId, userId: session.user.id, type: 'credit_card' },
+      where: { id: merged.debtId, userId, type: 'credit_card' },
     })
   }
+
+  const isActive = patch.isActive ?? existing.isActive
 
   const subscription = await prisma.$transaction(async (tx) => {
     const updated = await tx.subscription.update({
       where: { id },
-      data: {
-        name,
-        categoryId,
-        subcategoryId,
-        amount,
-        frequency,
-        dueDay,
-        dueMonth,
-        accountId,
-        debtId,
-      },
+      data: { ...merged, isActive },
     })
 
     // Not-yet-arrived planned items were generated from the old details;
@@ -239,6 +231,27 @@ export async function updateSubscription(id: string, formData: FormData) {
   })
 
   return { ...subscription, amount: Number(subscription.amount) }
+}
+
+export async function updateSubscription(id: string, formData: FormData) {
+  const session = await getServerSession()
+  if (!session) throw new Error('Not authenticated')
+
+  const frequency = parseFrequency(formData.get('frequency'))
+  const patch = updateSubscriptionSchema.parse({
+    name: formData.get('name'),
+    categoryId: formData.get('categoryId'),
+    subcategoryId: (formData.get('subcategoryId') as string) || null,
+    amount: parseCurrencyInput(formData.get('amount')),
+    frequency,
+    dueDay: parseDueDay(formData.get('dueDay')),
+    dueMonth:
+      frequency === 'yearly' ? parseDueMonth(formData.get('dueMonth')) : null,
+    accountId: (formData.get('accountId') as string) || null,
+    debtId: (formData.get('debtId') as string) || null,
+  })
+
+  return updateSubscriptionForUser(session.user.id, id, patch)
 }
 
 const paySubscriptionSchema = z
@@ -320,13 +333,21 @@ export async function reactivateSubscription(id: string) {
   })
 }
 
+export async function deleteSubscriptionForUser(userId: string, id: string) {
+  await prisma.subscription.findFirstOrThrow({
+    where: { id, userId },
+  })
+
+  // BudgetItem.subscriptionId is onDelete: Cascade, so this also removes
+  // every planned budget item (past and future) tied to the subscription —
+  // no separate cleanup needed here, unlike cancelSubscription (which only
+  // deactivates and has to delete the future items itself).
+  await prisma.subscription.delete({ where: { id } })
+}
+
 export async function deleteSubscription(id: string) {
   const session = await getServerSession()
   if (!session) throw new Error('Not authenticated')
 
-  await prisma.subscription.findFirstOrThrow({
-    where: { id, userId: session.user.id },
-  })
-
-  await prisma.subscription.delete({ where: { id } })
+  return deleteSubscriptionForUser(session.user.id, id)
 }

@@ -199,29 +199,30 @@ enum Role {
 }
 
 model User {
-  id                String             @id
-  name              String
-  email             String
-  emailVerified     Boolean            @default(false)
-  image             String?
-  currency          String             @default("usd")
-  timezone          String             @default("America/Bogota")
-  budgetPeriod      String             @default("monthly")
-  language          String             @default("en")
-  plan              Plan               @default(FREE)
-  role              Role               @default(USER)
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  sessions          Session[]
-  authaccounts      AuthAccount[]
-  accounts          Account[]
-  categories        Category[]
-  debts             Debt[]
-  budgetItems       BudgetItem[]
-  subscriptions     Subscription[]
-  recurringExpenses RecurringExpense[]
-  feedback          Feedback[]
-  mcpApiKeys        McpApiKey[]
+  id                      String                   @id
+  name                    String
+  email                   String
+  emailVerified           Boolean                  @default(false)
+  image                   String?
+  currency                String                   @default("usd")
+  timezone                String                   @default("America/Bogota")
+  budgetPeriod            String                   @default("monthly")
+  language                String                   @default("en")
+  plan                    Plan                     @default(FREE)
+  role                    Role                     @default(USER)
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  sessions                Session[]
+  authaccounts            AuthAccount[]
+  accounts                Account[]
+  categories              Category[]
+  debts                   Debt[]
+  budgetItems             BudgetItem[]
+  subscriptions           Subscription[]
+  recurringExpenses       RecurringExpense[]
+  feedback                Feedback[]
+  mcpApiKeys              McpApiKey[]
+  mcpIdempotencyKeys      McpIdempotencyKey[]
   oauthAuthorizationCodes OAuthAuthorizationCode[]
   oauthAccessTokens       OAuthAccessToken[]
 
@@ -240,6 +241,23 @@ model McpApiKey {
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([keyHash])
+  @@index([userId])
+}
+
+// Lets MCP write tools (create_transaction, create_transfer,
+// create_subscription) be safely retried by an agent after a timeout/network
+// error: the same (userId, toolName, idempotencyKey) returns the original
+// result instead of creating a duplicate record.
+model McpIdempotencyKey {
+  id             String   @id @default(uuid())
+  userId         String
+  toolName       String
+  idempotencyKey String
+  result         Json
+  createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, toolName, idempotencyKey])
   @@index([userId])
 }
 

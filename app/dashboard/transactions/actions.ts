@@ -193,33 +193,32 @@ export async function createTransaction(formData: FormData) {
   return createTransactionForUser(session.user.id, parsed)
 }
 
-export async function updateTransaction(id: string, formData: FormData) {
-  const session = await getServerSession()
-  if (!session) throw new Error('Not authenticated')
+export type TransactionPatch = {
+  accountId?: string | null
+  debtId?: string | null
+  amount?: number
+  type?: 'income' | 'expense'
+  categoryId?: string
+  subcategoryId?: string | null
+  description?: string
+  date?: Date
+}
 
-  const {
-    accountId,
-    debtId,
-    amount,
-    type,
-    categoryId,
-    subcategoryId,
-    description,
-    date,
-  } = transactionSchema.parse({
-    accountId: (formData.get('accountId') as string) || null,
-    debtId: (formData.get('debtId') as string) || null,
-    amount: parseCurrencyInput(formData.get('amount')),
-    type: formData.get('type'),
-    categoryId: formData.get('categoryId'),
-    subcategoryId: (formData.get('subcategoryId') as string) || null,
-    description: formData.get('description'),
-    date: new Date(formData.get('date') as string),
-  })
-
+// Partial update: any field left out of `patch` keeps its current value.
+// accountId/debtId are the exception — since exactly one of them names the
+// money source, providing either one (even to switch from an account to a
+// debt or vice versa) replaces the whole source pair; the one you didn't
+// name is cleared. This is what lets `update_transaction` fix "I recorded
+// this from Bancolombia but it was actually Nequi" by passing only the
+// corrected accountId.
+export async function updateTransactionForUser(
+  userId: string,
+  id: string,
+  patch: TransactionPatch
+) {
   const transaction = await prisma.$transaction(async (tx) => {
     const existing = await tx.transaction.findFirstOrThrow({
-      where: { id, userId: session.user.id },
+      where: { id, userId },
       include: { debtPayment: true },
     })
     if (existing.debtPayment) {
@@ -227,8 +226,26 @@ export async function updateTransaction(id: string, formData: FormData) {
         'This transaction mirrors a debt payment; edit or delete it from the debt instead'
       )
     }
+
+    const changingSource = 'accountId' in patch || 'debtId' in patch
+    const merged = transactionSchema.parse({
+      accountId: changingSource
+        ? (patch.accountId ?? null)
+        : existing.accountId,
+      debtId: changingSource ? (patch.debtId ?? null) : existing.debtId,
+      amount: patch.amount ?? Number(existing.amount),
+      type: patch.type ?? existing.type,
+      categoryId: patch.categoryId ?? existing.categoryId,
+      subcategoryId:
+        'subcategoryId' in patch
+          ? (patch.subcategoryId ?? null)
+          : existing.subcategoryId,
+      description: patch.description ?? existing.description,
+      date: patch.date ?? existing.date,
+    })
+
     await tx.category.findFirstOrThrow({
-      where: { id: categoryId, userId: session.user.id },
+      where: { id: merged.categoryId, userId },
     })
 
     if (existing.accountId) {
@@ -247,50 +264,57 @@ export async function updateTransaction(id: string, formData: FormData) {
       })
     }
 
-    if (accountId) {
+    if (merged.accountId) {
       await tx.account.findFirstOrThrow({
-        where: { id: accountId, userId: session.user.id },
+        where: { id: merged.accountId, userId },
       })
-      const newChange = type === 'income' ? amount : -amount
+      const newChange =
+        merged.type === 'income' ? merged.amount : -merged.amount
       await tx.account.update({
-        where: { id: accountId },
+        where: { id: merged.accountId },
         data: { currentBalance: { increment: newChange } },
       })
-    } else if (debtId) {
+    } else if (merged.debtId) {
       await tx.debt.findFirstOrThrow({
-        where: { id: debtId, userId: session.user.id, type: 'credit_card' },
+        where: { id: merged.debtId, userId, type: 'credit_card' },
       })
       await tx.debt.update({
-        where: { id: debtId },
-        data: { remainingBalance: { increment: amount } },
+        where: { id: merged.debtId },
+        data: { remainingBalance: { increment: merged.amount } },
       })
     }
 
     return tx.transaction.update({
       where: { id },
-      data: {
-        accountId,
-        debtId,
-        amount,
-        type,
-        description,
-        date,
-        categoryId,
-        subcategoryId,
-      },
+      data: merged,
     })
   })
 
   return { ...transaction, amount: Number(transaction.amount) }
 }
 
-export async function deleteTransaction(id: string) {
+export async function updateTransaction(id: string, formData: FormData) {
   const session = await getServerSession()
   if (!session) throw new Error('Not authenticated')
 
+  const patch = transactionSchema.parse({
+    accountId: (formData.get('accountId') as string) || null,
+    debtId: (formData.get('debtId') as string) || null,
+    amount: parseCurrencyInput(formData.get('amount')),
+    type: formData.get('type'),
+    categoryId: formData.get('categoryId'),
+    subcategoryId: (formData.get('subcategoryId') as string) || null,
+    description: formData.get('description'),
+    date: new Date(formData.get('date') as string),
+  })
+
+  return updateTransactionForUser(session.user.id, id, patch)
+}
+
+export async function deleteTransactionForUser(userId: string, id: string) {
   await prisma.$transaction(async (tx) => {
     const existing = await tx.transaction.findFirstOrThrow({
-      where: { id, userId: session.user.id },
+      where: { id, userId },
       include: { debtPayment: true },
     })
     if (existing.debtPayment) {
@@ -317,6 +341,13 @@ export async function deleteTransaction(id: string) {
 
     await tx.transaction.delete({ where: { id } })
   })
+}
+
+export async function deleteTransaction(id: string) {
+  const session = await getServerSession()
+  if (!session) throw new Error('Not authenticated')
+
+  return deleteTransactionForUser(session.user.id, id)
 }
 
 export async function createTransferForUser(
@@ -377,22 +408,30 @@ export async function createTransfer(formData: FormData) {
   return createTransferForUser(session.user.id, parsed)
 }
 
-export async function updateTransfer(id: string, formData: FormData) {
-  const session = await getServerSession()
-  if (!session) throw new Error('Not authenticated')
+export type TransferPatch = {
+  fromAccountId?: string
+  toAccountId?: string
+  amount?: number
+  date?: Date
+  note?: string | null
+}
 
-  const { fromAccountId, toAccountId, amount, date, note } =
-    transferSchema.parse({
-      fromAccountId: formData.get('fromAccountId'),
-      toAccountId: formData.get('toAccountId'),
-      amount: parseCurrencyInput(formData.get('amount')),
-      date: new Date(formData.get('date') as string),
-      note: formData.get('description'),
-    })
-
+export async function updateTransferForUser(
+  userId: string,
+  id: string,
+  patch: TransferPatch
+) {
   const transfer = await prisma.$transaction(async (tx) => {
     const existing = await tx.transfer.findFirstOrThrow({
-      where: { id, userId: session.user.id },
+      where: { id, userId },
+    })
+
+    const merged = transferSchema.parse({
+      fromAccountId: patch.fromAccountId ?? existing.fromAccountId,
+      toAccountId: patch.toAccountId ?? existing.toAccountId,
+      amount: patch.amount ?? Number(existing.amount),
+      date: patch.date ?? existing.date,
+      note: 'note' in patch ? patch.note : existing.note,
     })
 
     // Reverse the original transfer
@@ -406,44 +445,50 @@ export async function updateTransfer(id: string, formData: FormData) {
     })
 
     await tx.account.findFirstOrThrow({
-      where: { id: fromAccountId, userId: session.user.id },
+      where: { id: merged.fromAccountId, userId },
     })
     await tx.account.findFirstOrThrow({
-      where: { id: toAccountId, userId: session.user.id },
+      where: { id: merged.toAccountId, userId },
     })
 
     // Apply the updated transfer
     await tx.account.update({
-      where: { id: fromAccountId },
-      data: { currentBalance: { decrement: amount } },
+      where: { id: merged.fromAccountId },
+      data: { currentBalance: { decrement: merged.amount } },
     })
     await tx.account.update({
-      where: { id: toAccountId },
-      data: { currentBalance: { increment: amount } },
+      where: { id: merged.toAccountId },
+      data: { currentBalance: { increment: merged.amount } },
     })
 
     return tx.transfer.update({
       where: { id },
-      data: {
-        fromAccountId,
-        toAccountId,
-        amount,
-        date,
-        note,
-      },
+      data: merged,
     })
   })
 
   return { ...transfer, amount: Number(transfer.amount) }
 }
 
-export async function deleteTransfer(id: string) {
+export async function updateTransfer(id: string, formData: FormData) {
   const session = await getServerSession()
   if (!session) throw new Error('Not authenticated')
 
+  const patch = transferSchema.parse({
+    fromAccountId: formData.get('fromAccountId'),
+    toAccountId: formData.get('toAccountId'),
+    amount: parseCurrencyInput(formData.get('amount')),
+    date: new Date(formData.get('date') as string),
+    note: formData.get('description'),
+  })
+
+  return updateTransferForUser(session.user.id, id, patch)
+}
+
+export async function deleteTransferForUser(userId: string, id: string) {
   await prisma.$transaction(async (tx) => {
     const existing = await tx.transfer.findFirstOrThrow({
-      where: { id, userId: session.user.id },
+      where: { id, userId },
     })
 
     await tx.account.update({
@@ -457,4 +502,11 @@ export async function deleteTransfer(id: string) {
 
     await tx.transfer.delete({ where: { id } })
   })
+}
+
+export async function deleteTransfer(id: string) {
+  const session = await getServerSession()
+  if (!session) throw new Error('Not authenticated')
+
+  return deleteTransferForUser(session.user.id, id)
 }
