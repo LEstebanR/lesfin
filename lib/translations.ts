@@ -14,6 +14,8 @@ export const translations = {
       spendingTrends: 'Spending Trends',
       profile: 'Profile',
       settings: 'Settings',
+      plan: 'Plan',
+      pricing: 'Pricing',
       admin: 'Admin',
     },
     header: {
@@ -35,6 +37,7 @@ export const translations = {
         'Accounts, transactions, debts, subscriptions, and budget — one clear view instead of five scattered apps and a spreadsheet.',
       getStarted: 'Start for free',
       seeHowItWorks: 'See how it works',
+      seePricing: 'See pricing',
       heroTrust: 'Free · No credit card · Sign in with Google',
 
       stripLabel: 'Everything in one place',
@@ -170,6 +173,7 @@ export const translations = {
       proFeature6: 'Full spending trends history',
       mostPopular: 'Most popular',
       comingSoon: 'Coming soon',
+      currentPlan: 'Current plan',
       startFree: 'Start for free',
       notifyMe: 'Notify me at launch',
       faqTitle: 'Billing questions.',
@@ -182,6 +186,20 @@ export const translations = {
       faqQ3: 'What happens if I go over a Free limit?',
       faqA3:
         "You'll be prompted to upgrade to Pro once Pro is available. Nothing you've already logged is ever deleted or hidden.",
+    },
+    plan: {
+      currentTitle: 'Current plan',
+      freeDesc: 'You are on the Free plan.',
+      proDesc: 'You are on the Pro plan — every limit removed.',
+      usageTitle: 'Plan usage',
+      usageDesc: 'How much of the Free plan you are using right now.',
+      transactionsThisMonth: 'Transactions this month',
+      usedOf: '{used} of {limit}',
+      unlimitedTitle: 'Everything unlimited',
+      unlimitedDesc:
+        'Pro removes every limit — there are no meters to watch here.',
+      upgradeTitle: 'Upgrade to Pro',
+      upgradeDesc: 'The same app, with every limit removed.',
     },
     blog: {
       eyebrow: 'Blog',
@@ -503,6 +521,7 @@ export const translations = {
       monthlyDistribution: 'Monthly Payment Distribution',
       monthlyDistributionDesc: 'Share of total minimum payments by debt',
       paidOfTotal: '${paid} paid of ${total}',
+      paidOff: 'Paid off',
       usedOfLimit: '${used} used of ${limit}',
       creatingDebt: 'Creating Debt...',
       debtCreated: 'Debt created successfully!',
@@ -722,6 +741,8 @@ export const translations = {
       spendingTrends: 'Seguimiento de Gastos',
       profile: 'Perfil',
       settings: 'Configuración',
+      plan: 'Plan',
+      pricing: 'Precios',
       admin: 'Admin',
     },
     header: {
@@ -743,6 +764,7 @@ export const translations = {
         'Cuentas, transacciones, deudas, suscripciones y presupuesto — una sola vista clara en vez de cinco apps sueltas y una hoja de cálculo.',
       getStarted: 'Empezar gratis',
       seeHowItWorks: 'Ver cómo funciona',
+      seePricing: 'Ver precios',
       heroTrust: 'Gratis · Sin tarjeta de crédito · Acceso con Google',
 
       stripLabel: 'Todo en un solo lugar',
@@ -878,6 +900,7 @@ export const translations = {
       proFeature6: 'Historial completo de tendencias',
       mostPopular: 'Más elegido',
       comingSoon: 'Próximamente',
+      currentPlan: 'Plan actual',
       startFree: 'Empezar gratis',
       notifyMe: 'Avisarme cuando esté disponible',
       faqTitle: 'Dudas sobre el cobro.',
@@ -890,6 +913,20 @@ export const translations = {
       faqQ3: '¿Qué pasa si supero un límite del plan Free?',
       faqA3:
         'Vas a poder actualizar a Pro cuando esté disponible. Nada de lo que ya registraste se borra ni se oculta.',
+    },
+    plan: {
+      currentTitle: 'Plan actual',
+      freeDesc: 'Estás usando el plan Free.',
+      proDesc: 'Estás usando el plan Pro — sin ningún límite.',
+      usageTitle: 'Uso del plan',
+      usageDesc: 'Cuánto del plan Free estás usando en este momento.',
+      transactionsThisMonth: 'Transacciones de este mes',
+      usedOf: '{used} de {limit}',
+      unlimitedTitle: 'Todo ilimitado',
+      unlimitedDesc:
+        'Pro elimina todos los límites — no hay medidores que revisar.',
+      upgradeTitle: 'Actualizar a Pro',
+      upgradeDesc: 'La misma app, sin ningún límite.',
     },
     blog: {
       eyebrow: 'Blog',
@@ -1188,6 +1225,7 @@ export const translations = {
       monthlyDistribution: 'Distribución de Pagos Mensuales',
       monthlyDistributionDesc: 'Proporción de los pagos mínimos por deuda',
       paidOfTotal: '${paid} pagados de ${total}',
+      paidOff: 'Pagada',
       usedOfLimit: '${used} usados de ${limit}',
       creatingDebt: 'Creando deuda...',
       debtCreated: '¡Deuda creada exitosamente!',

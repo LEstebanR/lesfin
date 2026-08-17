@@ -5,8 +5,6 @@ import { useLanguage } from '@/components/language-provider'
 import { formatMoney } from '@/lib/currency'
 import { useAccounts, useTransactions, useTransfers } from '@/lib/queries'
 import {
-  ArrowDown,
-  ArrowUp,
   ChevronLeft,
   ChevronRight,
   CreditCard,
@@ -26,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select'
+import { SortableTableHead } from '../ui/sortable-table-head'
 import {
   Table,
   TableBody,
@@ -117,7 +116,10 @@ export function Transactions() {
   const [transactionsPerPage] = useState(10)
   const [editingItem, setEditingItem] = useState<EditableItem | null>(null)
   const [isEditOpen, setIsEditOpen] = useState(false)
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  const [sort, setSort] = useState<{
+    key: 'description' | 'account' | 'type' | 'category' | 'amount' | 'date'
+    direction: 'asc' | 'desc'
+  }>({ key: 'date', direction: 'desc' })
   const [search, setSearch] = useState('')
   const [accountFilter, setAccountFilter] = useState(ALL)
   const [categoryFilter, setCategoryFilter] = useState(ALL)
@@ -142,11 +144,8 @@ export function Transactions() {
       toAccountName: accountMap.get(tItem.toAccountId),
     }))
 
-    return [...transactionItems, ...transferItems].sort((a, b) => {
-      const diff = new Date(a.date).getTime() - new Date(b.date).getTime()
-      return sortOrder === 'asc' ? diff : -diff
-    })
-  }, [accounts, transactions, transfers, sortOrder])
+    return [...transactionItems, ...transferItems]
+  }, [accounts, transactions, transfers])
 
   const accountOptions = useMemo(() => {
     const map = new Map<string, string>()
@@ -216,7 +215,7 @@ export function Transactions() {
         )
       : null
 
-    return combinedItems.filter((item) => {
+    const filtered = combinedItems.filter((item) => {
       if (accountFilter !== ALL) {
         const matchesAccount =
           item.itemType === 'transaction'
@@ -248,11 +247,57 @@ export function Transactions() {
 
       return true
     })
-  }, [combinedItems, accountFilter, categoryFilter, dateFrom, dateTo, search])
+
+    const textValue = (
+      item: CombinedItem,
+      key: 'description' | 'account' | 'type' | 'category'
+    ) => {
+      if (key === 'description') {
+        return item.itemType === 'transaction'
+          ? item.description || item.categoryName
+          : item.note || t('overview.transfer')
+      }
+      if (key === 'account') {
+        return item.itemType === 'transaction'
+          ? item.sourceName || ''
+          : `${item.fromAccountName ?? ''} ${item.toAccountName ?? ''}`
+      }
+      if (key === 'type') {
+        return item.itemType === 'transfer' ? 'transfer' : item.type
+      }
+      return item.itemType === 'transaction' ? item.categoryName : ''
+    }
+
+    return filtered.sort((a, b) => {
+      let diff: number
+      if (sort.key === 'amount') diff = Number(a.amount) - Number(b.amount)
+      else if (sort.key === 'date')
+        diff = new Date(a.date).getTime() - new Date(b.date).getTime()
+      else diff = textValue(a, sort.key).localeCompare(textValue(b, sort.key))
+      return sort.direction === 'asc' ? diff : -diff
+    })
+  }, [
+    combinedItems,
+    accountFilter,
+    categoryFilter,
+    dateFrom,
+    dateTo,
+    search,
+    sort,
+    t,
+  ])
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [accountFilter, categoryFilter, dateFrom, dateTo, search, sortOrder])
+  }, [accountFilter, categoryFilter, dateFrom, dateTo, search, sort])
+
+  const toggleSort = (key: typeof sort.key) => {
+    setSort((current) => ({
+      key,
+      direction:
+        current.key === key && current.direction === 'asc' ? 'desc' : 'asc',
+    }))
+  }
 
   const filterItemsByType = (
     type: 'all' | 'income' | 'expense' | 'transfer'
@@ -285,11 +330,11 @@ export function Transactions() {
 
   const EmptyState = () => (
     <div className="flex flex-col items-center justify-center py-12 text-center">
-      <CreditCard className="mb-4 h-16 w-16 text-gray-300" />
-      <h3 className="mb-2 text-lg font-semibold text-gray-900">
+      <CreditCard className="text-muted-foreground/40 mb-4 h-16 w-16" />
+      <h3 className="text-foreground mb-2 text-lg font-semibold">
         {t('transactions.noItemsFound')}
       </h3>
-      <p className="mb-6 max-w-sm text-gray-500">
+      <p className="text-muted-foreground mb-6 max-w-sm">
         {t('transactions.noItemsFoundDesc')}
       </p>
       <AddTransactionDialog
@@ -305,11 +350,11 @@ export function Transactions() {
 
   const NoResultsState = () => (
     <div className="flex flex-col items-center justify-center py-12 text-center">
-      <CreditCard className="mb-4 h-16 w-16 text-gray-300" />
-      <h3 className="mb-2 text-lg font-semibold text-gray-900">
+      <CreditCard className="text-muted-foreground/40 mb-4 h-16 w-16" />
+      <h3 className="text-foreground mb-2 text-lg font-semibold">
         {t('transactions.noResultsFiltered')}
       </h3>
-      <p className="mb-6 max-w-sm text-gray-500">
+      <p className="text-muted-foreground mb-6 max-w-sm">
         {t('transactions.noResultsFilteredDesc')}
       </p>
       <Button variant="outline" onClick={clearFilters}>
@@ -444,44 +489,52 @@ export function Transactions() {
                     )
                   ) : (
                     <>
-                      <div className="rounded-md border">
+                      <div>
                         <Table>
                           <TableHeader>
                             <TableRow>
-                              <TableHead>
+                              <SortableTableHead
+                                active={sort.key === 'description'}
+                                direction={sort.direction}
+                                onSort={() => toggleSort('description')}
+                              >
                                 {t('transactions.table.description')}
-                              </TableHead>
-                              <TableHead>
+                              </SortableTableHead>
+                              <SortableTableHead
+                                active={sort.key === 'account'}
+                                direction={sort.direction}
+                                onSort={() => toggleSort('account')}
+                              >
                                 {t('transactions.table.account')}
-                              </TableHead>
-                              <TableHead>
+                              </SortableTableHead>
+                              <SortableTableHead
+                                active={sort.key === 'type'}
+                                direction={sort.direction}
+                                onSort={() => toggleSort('type')}
+                              >
                                 {t('transactions.table.type')}
-                              </TableHead>
-                              <TableHead>
+                              </SortableTableHead>
+                              <SortableTableHead
+                                active={sort.key === 'category'}
+                                direction={sort.direction}
+                                onSort={() => toggleSort('category')}
+                              >
                                 {t('transactions.table.category')}
-                              </TableHead>
-                              <TableHead>
+                              </SortableTableHead>
+                              <SortableTableHead
+                                active={sort.key === 'amount'}
+                                direction={sort.direction}
+                                onSort={() => toggleSort('amount')}
+                              >
                                 {t('transactions.table.amount')}
-                              </TableHead>
-                              <TableHead>
-                                <button
-                                  type="button"
-                                  className="flex items-center gap-1"
-                                  onClick={() =>
-                                    setSortOrder((prev) =>
-                                      prev === 'asc' ? 'desc' : 'asc'
-                                    )
-                                  }
-                                  aria-label={t('transactions.sortByDate')}
-                                >
-                                  {t('transactions.table.date')}
-                                  {sortOrder === 'asc' ? (
-                                    <ArrowUp className="h-3 w-3" />
-                                  ) : (
-                                    <ArrowDown className="h-3 w-3" />
-                                  )}
-                                </button>
-                              </TableHead>
+                              </SortableTableHead>
+                              <SortableTableHead
+                                active={sort.key === 'date'}
+                                direction={sort.direction}
+                                onSort={() => toggleSort('date')}
+                              >
+                                {t('transactions.table.date')}
+                              </SortableTableHead>
                               <TableHead className="text-right">
                                 {t('transactions.table.actions')}
                               </TableHead>
@@ -524,7 +577,7 @@ export function Transactions() {
                                     </span>
                                   )}
                                 </TableCell>
-                                <TableCell className="text-gray-500">
+                                <TableCell className="text-muted-foreground">
                                   {item.itemType === 'transaction'
                                     ? item.categoryName || '-'
                                     : '-'}

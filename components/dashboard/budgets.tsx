@@ -464,7 +464,7 @@ export function Budgets() {
     item: (typeof items)[number]
     isRecurring: boolean
   }) => (
-    <div className="flex items-center justify-between gap-2 rounded-lg border px-3 py-2">
+    <div className="bg-muted/50 flex items-center justify-between gap-2 rounded-lg px-3 py-2">
       <div className="flex min-w-0 items-center gap-3">
         <span className="text-muted-foreground w-14 shrink-0 text-xs">
           {new Date(item.date).toLocaleDateString(locale, {
@@ -706,7 +706,7 @@ export function Budgets() {
 
             {items.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 text-center">
-                <Wallet className="mb-3 h-12 w-12 text-gray-300" />
+                <Wallet className="text-muted-foreground/40 mb-3 h-12 w-12" />
                 <p className="text-muted-foreground text-sm">
                   {t('budgets.noItemsYet')}
                 </p>
@@ -809,7 +809,7 @@ export function Budgets() {
                   return (
                     <div
                       key={item.categoryId}
-                      className="rounded-lg border p-3"
+                      className="bg-muted/50 rounded-lg p-3"
                     >
                       <div className="mb-1 flex items-center justify-between text-sm">
                         <span className="font-medium">{item.categoryName}</span>
@@ -818,7 +818,7 @@ export function Budgets() {
                           {formatMoney(displayAmount, currency)}
                         </span>
                       </div>
-                      <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
+                      <div className="bg-muted h-2 w-full overflow-hidden rounded-full">
                         <div
                           className={`h-full rounded-full ${barColor}`}
                           style={{ width: `${percentSpent}%` }}

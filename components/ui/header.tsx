@@ -52,13 +52,15 @@ function DashboardHeaderContent({ user }: { user?: HeaderUser | null }) {
 
   return (
     <header
-      className="bg-background fixed top-0 right-0 z-50 flex h-14 items-center justify-between border-b px-4 transition-[left] duration-200 ease-linear"
+      className="bg-background/90 fixed top-0 right-0 z-50 flex h-16 items-center justify-between border-b px-5 backdrop-blur transition-[left] duration-200 ease-linear"
       style={{ left: sidebarOffset }}
     >
       <div className="flex items-center gap-4">
         <SidebarTrigger />
       </div>
-      <h2 className="truncate text-lg font-bold capitalize">{viewTitle}</h2>
+      <h2 className="truncate text-xs font-black tracking-[0.18em] uppercase">
+        {viewTitle}
+      </h2>
       <div className="flex items-center gap-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -73,7 +75,7 @@ function DashboardHeaderContent({ user }: { user?: HeaderUser | null }) {
             <DropdownMenuLabel className="text-bold py-0">
               {user?.name}
             </DropdownMenuLabel>
-            <DropdownMenuLabel className="py-0 text-gray-500">
+            <DropdownMenuLabel className="text-muted-foreground py-0">
               {user?.email}
             </DropdownMenuLabel>
             <DropdownMenuSeparator />

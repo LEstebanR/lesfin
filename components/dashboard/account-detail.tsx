@@ -13,6 +13,7 @@ import { useMemo, useState } from 'react'
 
 import { Button } from '../ui/button'
 import { Loader } from '../ui/loader'
+import { SortableTableHead } from '../ui/sortable-table-head'
 import {
   Table,
   TableBody,
@@ -51,6 +52,8 @@ export function AccountDetail() {
   const [editingItem, setEditingItem] = useState<EditableItem | null>(null)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isEditAccountOpen, setIsEditAccountOpen] = useState(false)
+  const [sort, setSort] = useState<'description' | 'amount' | 'date'>('date')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
 
   const account = accounts.find((a) => a.id === accountId)
 
@@ -105,10 +108,29 @@ export function AccountDetail() {
       })
     }
 
-    return own.sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    )
+    return own
   }, [transactions, transfers, accounts, accountId, t])
+
+  const sortedMovements = useMemo(() => {
+    return [...movements].sort((a, b) => {
+      const difference =
+        sort === 'description'
+          ? a.description.localeCompare(b.description)
+          : sort === 'amount'
+            ? a.signedAmount - b.signedAmount
+            : new Date(a.date).getTime() - new Date(b.date).getTime()
+      return sortDirection === 'asc' ? difference : -difference
+    })
+  }, [movements, sort, sortDirection])
+
+  const toggleSort = (key: typeof sort) => {
+    if (sort === key)
+      setSortDirection((direction) => (direction === 'asc' ? 'desc' : 'asc'))
+    else {
+      setSort(key)
+      setSortDirection('asc')
+    }
+  }
 
   const handleEdit = (item: EditableItem) => {
     setEditingItem(item)
@@ -161,7 +183,7 @@ export function AccountDetail() {
         <div className="flex items-center justify-between gap-4">
           <div className="flex min-w-0 items-center gap-3">
             {account.logoUrl ? (
-              <div className="bg-muted h-12 w-12 shrink-0 overflow-hidden rounded-lg border">
+              <div className="bg-muted h-12 w-12 shrink-0 overflow-hidden rounded-lg">
                 {/* eslint-disable-next-line @next/next/no-img-element -- external/dynamic logo domains, not worth remotePatterns config */}
                 <img
                   src={account.logoUrl}
@@ -204,7 +226,7 @@ export function AccountDetail() {
           </Button>
         </div>
 
-        <div className="rounded-lg border p-6">
+        <div className="bg-muted/50 rounded-xl p-6">
           <p className="text-muted-foreground mb-1 text-sm">
             {t('accounts.currentBalance')}
           </p>
@@ -228,20 +250,38 @@ export function AccountDetail() {
               {t('accounts.noMovements')}
             </p>
           ) : (
-            <div className="mt-4 rounded-md border">
+            <div className="mt-4">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('transactions.table.description')}</TableHead>
-                    <TableHead>{t('transactions.table.amount')}</TableHead>
-                    <TableHead>{t('transactions.table.date')}</TableHead>
+                    <SortableTableHead
+                      active={sort === 'description'}
+                      direction={sortDirection}
+                      onSort={() => toggleSort('description')}
+                    >
+                      {t('transactions.table.description')}
+                    </SortableTableHead>
+                    <SortableTableHead
+                      active={sort === 'amount'}
+                      direction={sortDirection}
+                      onSort={() => toggleSort('amount')}
+                    >
+                      {t('transactions.table.amount')}
+                    </SortableTableHead>
+                    <SortableTableHead
+                      active={sort === 'date'}
+                      direction={sortDirection}
+                      onSort={() => toggleSort('date')}
+                    >
+                      {t('transactions.table.date')}
+                    </SortableTableHead>
                     <TableHead className="text-right">
                       {t('transactions.table.actions')}
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {movements.map((movement) => (
+                  {sortedMovements.map((movement) => (
                     <TableRow key={movement.id}>
                       <TableCell className="font-medium">
                         {movement.description}

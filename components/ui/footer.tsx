@@ -18,9 +18,9 @@ export function Footer() {
         </Link>
         <div className="bg-primary mx-2 h-[30px] w-[0.5px] rotate-[20deg]"></div>
         <div className="flex items-center gap-x-1 text-xs sm:text-base">
-          <span className="text-slate-500">{t('footer.madeWith')}</span>
+          <span className="text-muted-foreground">{t('footer.madeWith')}</span>
           <Heart className="h-4 w-4 text-red-500" />
-          <span className="text-slate-500">{t('footer.by')}</span>
+          <span className="text-muted-foreground">{t('footer.by')}</span>
           <Link href="https://github.com/LEstebanR/lesteban">LEstebanR</Link>
         </div>
       </div>

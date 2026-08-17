@@ -7,6 +7,8 @@ import { Budgets } from '@/components/dashboard/budgets'
 import { DebtDetail } from '@/components/dashboard/debt-detail'
 import { Debts } from '@/components/dashboard/debts'
 import { Overview } from '@/components/dashboard/overview'
+import { Plan } from '@/components/dashboard/plan'
+import { Pricing } from '@/components/dashboard/pricing'
 import { Profile } from '@/components/dashboard/profile'
 import { Settings } from '@/components/dashboard/settings'
 import { SpendingTrends } from '@/components/dashboard/spending-trends'
@@ -32,6 +34,8 @@ export default function Dashboard() {
       {currentView === 'spending-trends' && <SpendingTrends />}
       {currentView === 'overview' && <Overview />}
       {currentView === 'profile' && <Profile />}
+      {currentView === 'plan' && <Plan />}
+      {currentView === 'pricing' && <Pricing />}
       {currentView === 'settings' && <Settings />}
       {currentView === 'admin' && profile?.role === 'ADMIN' && <AdminView />}
     </div>

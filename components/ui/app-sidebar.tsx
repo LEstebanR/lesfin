@@ -16,6 +16,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 import {
+  BadgeDollarSign,
   CreditCard,
   Home,
   Landmark,
@@ -23,6 +24,7 @@ import {
   Repeat,
   Settings,
   Shield,
+  Sparkles,
   TrendingUp,
   User,
   Wallet,
@@ -67,17 +69,21 @@ function AppSidebarContent({ isAdmin }: { isAdmin: boolean }) {
 
   const optionsSettings = [
     { icon: <User />, label: t('nav.profile'), href: '?profile' },
+    { icon: <Sparkles />, label: t('nav.plan'), href: '?plan' },
+    { icon: <BadgeDollarSign />, label: t('nav.pricing'), href: '?pricing' },
     { icon: <Settings />, label: t('nav.settings'), href: '?settings' },
   ]
 
   return (
-    <Sidebar className="">
-      <SidebarHeader>
+    <Sidebar className="border-r-0">
+      <SidebarHeader className="border-sidebar-border border-b p-5">
         <Logo />
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>{t('nav.menu')}</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-sidebar-foreground/45 px-2 text-[10px] font-bold tracking-[0.2em] uppercase">
+            {t('nav.menu')}
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {optionsMenu.map((option) => {
@@ -124,7 +130,9 @@ function AppSidebarContent({ isAdmin }: { isAdmin: boolean }) {
           </SidebarGroup>
         )}
         <SidebarGroup>
-          <SidebarGroupLabel>{t('nav.userSettings')}</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-sidebar-foreground/45 px-2 text-[10px] font-bold tracking-[0.2em] uppercase">
+            {t('nav.userSettings')}
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {optionsSettings.map((option) => {

@@ -4,11 +4,7 @@ import { useLanguage } from '@/components/language-provider'
 import { Lock, PiggyBank, PlusIcon, Wallet } from 'lucide-react'
 
 function MockShell({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="border-border bg-card rounded-2xl border p-5 shadow-xl shadow-black/5">
-      {children}
-    </div>
-  )
+  return <div className="bg-card shadow-soft rounded-2xl p-5">{children}</div>
 }
 
 export function AccountsMock() {
@@ -40,7 +36,7 @@ export function AccountsMock() {
         {rows.map((row) => (
           <div
             key={row.label}
-            className="border-border flex items-center justify-between rounded-xl border p-3"
+            className="bg-muted/50 flex items-center justify-between rounded-xl p-3"
           >
             <div className="flex items-center gap-3">
               <span
@@ -69,7 +65,7 @@ export function TransactionMock() {
           <span className="text-muted-foreground text-xs">
             {t('transactions.amount')}
           </span>
-          <div className="border-border rounded-lg border px-3 py-2.5 text-lg font-bold">
+          <div className="bg-muted/50 rounded-lg px-3 py-2.5 text-lg font-bold">
             $85.400
           </div>
         </div>
@@ -142,13 +138,13 @@ export function BudgetMock() {
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <div className="border-border rounded-lg border p-3">
+          <div className="bg-muted/50 rounded-lg p-3">
             <p className="text-muted-foreground text-xs">
               {t('overview.totalDebt')}
             </p>
             <p className="text-sm font-semibold">$3.200.000</p>
           </div>
-          <div className="border-border rounded-lg border p-3">
+          <div className="bg-muted/50 rounded-lg p-3">
             <p className="text-muted-foreground text-xs">
               {t('subscriptions.title')}
             </p>

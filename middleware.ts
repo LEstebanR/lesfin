@@ -7,6 +7,8 @@ export async function middleware(request: NextRequest) {
   if (
     !sessionCookie &&
     request.nextUrl.pathname !== '/' &&
+    request.nextUrl.pathname !== '/pricing' &&
+    !request.nextUrl.pathname.startsWith('/blog') &&
     request.nextUrl.pathname !== '/login' &&
     request.nextUrl.pathname !== '/signup' &&
     !request.nextUrl.pathname.startsWith('/api/auth') &&

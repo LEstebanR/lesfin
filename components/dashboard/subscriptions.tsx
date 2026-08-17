@@ -203,11 +203,11 @@ export function Subscriptions() {
     subscription: Subscription
   }) => (
     <div
-      className={`rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md ${!subscription.isActive ? 'opacity-60' : ''}`}
+      className={`bg-card text-card-foreground shadow-soft hover:shadow-lift rounded-xl p-6 transition-shadow ${!subscription.isActive ? 'opacity-60' : ''}`}
     >
       <div className="mb-4 flex items-start justify-between">
         <div>
-          <h3 className="truncate text-xl font-bold text-gray-900">
+          <h3 className="text-foreground truncate text-xl font-bold">
             {subscription.name}
           </h3>
           <div className="mt-1 flex flex-wrap gap-1">
@@ -246,10 +246,10 @@ export function Subscriptions() {
       </div>
 
       <div className="mb-4">
-        <p className="text-3xl font-bold text-gray-900">
+        <p className="text-foreground text-3xl font-bold">
           ${formatMoney(subscription.amount, currency)}
         </p>
-        <p className="mt-1 text-xs text-gray-500">
+        <p className="text-muted-foreground mt-1 text-xs">
           {subscription.frequency === 'yearly'
             ? t('subscriptions.dueOnDayOfMonth', {
                 day: String(subscription.dueDay),
@@ -260,7 +260,7 @@ export function Subscriptions() {
             : t('debts.dueOnDay', { day: String(subscription.dueDay) })}
         </p>
         {subscription.sourceName && (
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="text-muted-foreground mt-1 text-xs">
             {t('subscriptions.paidWith', { name: subscription.sourceName })}
           </p>
         )}
@@ -452,11 +452,11 @@ export function Subscriptions() {
           <Loader className="m-auto" />
         ) : subscriptions.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <Repeat className="mb-4 h-16 w-16 text-gray-300" />
-            <h3 className="mb-2 text-lg font-semibold text-gray-900">
+            <Repeat className="text-muted-foreground/40 mb-4 h-16 w-16" />
+            <h3 className="text-foreground mb-2 text-lg font-semibold">
               {t('subscriptions.noSubscriptionsYet')}
             </h3>
-            <p className="mb-6 max-w-sm text-gray-500">
+            <p className="text-muted-foreground mb-6 max-w-sm">
               {t('subscriptions.noSubscriptionsYetDesc')}
             </p>
             <AddSubscriptionDialog

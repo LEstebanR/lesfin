@@ -7,6 +7,7 @@ import {
 import { getCategories } from '@/app/dashboard/categories/actions'
 import { getDebts } from '@/app/dashboard/debts/actions'
 import { getOverviewData } from '@/app/dashboard/overview/actions'
+import { getPlanUsage } from '@/app/dashboard/plan/actions'
 import { getProfile, updateLanguage } from '@/app/dashboard/profile/actions'
 import { getCategoryMonthlyTotals } from '@/app/dashboard/spending-trends/actions'
 import { getSubscriptions } from '@/app/dashboard/subscriptions/actions'
@@ -102,6 +103,10 @@ export default async function AuthenticatedLayout({
         queryFn: getProfile,
       }),
       queryClient.prefetchQuery({
+        queryKey: queryKeys.planUsage,
+        queryFn: getPlanUsage,
+      }),
+      queryClient.prefetchQuery({
         queryKey: queryKeys.budgetOverview(month, year),
         queryFn: () => getBudgetOverview(month, year),
       }),
@@ -128,7 +133,7 @@ export default async function AuthenticatedLayout({
       >
         <SidebarProvider>
           <AppSidebar isAdmin={user?.role === 'ADMIN'} />
-          <main className="flex min-h-svh w-full min-w-0 flex-col pt-14">
+          <main className="bg-background flex min-h-svh w-full min-w-0 flex-col pt-16">
             <Header user={session?.user} />
             <CurrencyProvider currency={user?.currency ?? 'usd'}>
               <QueryProvider>

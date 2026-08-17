@@ -63,7 +63,7 @@ export function PricingPage() {
       <section className="w-full px-4 pb-24">
         <div className="mx-auto grid max-w-4xl gap-6 md:grid-cols-2">
           <Reveal>
-            <div className="border-border bg-card flex h-full flex-col rounded-3xl border p-8">
+            <div className="bg-card border-border shadow-soft flex h-full flex-col rounded-2xl border p-8">
               <h2 className="text-2xl font-black tracking-tight">
                 {t('pricing.freeName')}
               </h2>
@@ -97,7 +97,7 @@ export function PricingPage() {
           </Reveal>
 
           <Reveal delay={100}>
-            <div className="border-primary bg-card relative flex h-full flex-col rounded-3xl border-2 p-8 shadow-lg">
+            <div className="bg-primary text-primary-foreground shadow-lift relative flex h-full flex-col rounded-2xl border-2 border-transparent p-8">
               <Badge className="absolute -top-3 left-8 gap-1">
                 <Sparkles className="h-3 w-3" />
                 {t('pricing.mostPopular')}
@@ -105,14 +105,14 @@ export function PricingPage() {
               <h2 className="text-2xl font-black tracking-tight">
                 {t('pricing.proName')}
               </h2>
-              <p className="text-muted-foreground mt-2 text-sm">
+              <p className="text-primary-foreground/70 mt-2 text-sm">
                 {t('pricing.proDescription')}
               </p>
               <div className="mt-6 flex items-end gap-1">
                 <span className="text-5xl font-black tracking-tighter">
                   {PRO_MONTHLY_PRICE}
                 </span>
-                <span className="text-muted-foreground mb-1 text-sm">
+                <span className="text-primary-foreground/70 mb-1 text-sm">
                   {t('pricing.perMonth')}
                 </span>
               </div>
@@ -125,8 +125,8 @@ export function PricingPage() {
                     key={feature}
                     className="flex items-start gap-3 text-sm font-medium"
                   >
-                    <span className="bg-primary mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full">
-                      <Check className="h-3 w-3 text-white" strokeWidth={3} />
+                    <span className="bg-accent text-accent-foreground mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full">
+                      <Check className="h-3 w-3" strokeWidth={3} />
                     </span>
                     {feature}
                   </li>

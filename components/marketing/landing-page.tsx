@@ -245,6 +245,15 @@ export function LandingPage() {
                 {t('landing.seeHowItWorks')}
               </Button>
             </Link>
+            <Link href="/pricing" className="w-full sm:w-auto">
+              <Button
+                size="lg"
+                variant="ghost"
+                className="h-12 w-full px-8 sm:w-auto"
+              >
+                {t('landing.seePricing')}
+              </Button>
+            </Link>
           </div>
           <p
             className="text-muted-foreground animate-fade-up mt-6 text-sm"
@@ -263,22 +272,22 @@ export function LandingPage() {
             <SpendingTrendsPreview />
           </div>
           <div
-            className="animate-fade-up border-border absolute -top-5 -left-6 z-10 hidden items-center gap-2 rounded-full border bg-white px-4 py-2.5 shadow-xl sm:flex"
+            className="animate-fade-up bg-card shadow-lift absolute -top-5 -left-6 z-10 hidden items-center gap-2 rounded-full px-4 py-2.5 sm:flex"
             style={{ animationDelay: '620ms' }}
           >
             <div className="bg-primary flex h-5 w-5 items-center justify-center rounded-full">
               <Check className="h-3 w-3 text-white" strokeWidth={3} />
             </div>
-            <span className="text-xs font-bold text-black">
+            <span className="text-foreground text-xs font-bold">
               {t('landing.stripAccounts')}
             </span>
           </div>
           <div
-            className="animate-fade-up border-border absolute -right-6 -bottom-5 z-10 hidden items-center gap-2 rounded-full border bg-white px-4 py-2.5 shadow-xl sm:flex"
+            className="animate-fade-up bg-card shadow-lift absolute -right-6 -bottom-5 z-10 hidden items-center gap-2 rounded-full px-4 py-2.5 sm:flex"
             style={{ animationDelay: '760ms' }}
           >
             <PiggyBank className="text-primary h-4 w-4" />
-            <span className="text-xs font-bold text-black">
+            <span className="text-foreground text-xs font-bold">
               {t('landing.stripBudget')}
             </span>
           </div>
@@ -389,7 +398,7 @@ export function LandingPage() {
           <div className="grid gap-6 md:grid-cols-3">
             {capabilities.map((capability, i) => (
               <Reveal key={capability.title} delay={i * 100}>
-                <div className="border-border bg-card flex h-full flex-col gap-4 rounded-3xl border p-7">
+                <div className="bg-card shadow-soft flex h-full flex-col gap-4 rounded-3xl p-7">
                   <div className="bg-primary/10 flex h-11 w-11 items-center justify-center rounded-xl">
                     <capability.icon
                       className="text-primary h-5 w-5"
@@ -428,7 +437,7 @@ export function LandingPage() {
           <div className="grid gap-6 md:grid-cols-3">
             {steps.map((step, i) => (
               <Reveal key={step.number} delay={i * 100}>
-                <div className="border-border bg-card flex h-full flex-col gap-5 rounded-3xl border p-6">
+                <div className="bg-card shadow-soft flex h-full flex-col gap-5 rounded-3xl p-6">
                   <span className="text-primary/15 block text-5xl leading-none font-black tracking-tighter tabular-nums">
                     {step.number}
                   </span>

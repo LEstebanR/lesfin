@@ -28,6 +28,7 @@ import {
 } from '../ui/card'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '../ui/chart'
 import { Input } from '../ui/input'
+import { SortableTableHead } from '../ui/sortable-table-head'
 import {
   Table,
   TableBody,
@@ -157,6 +158,10 @@ function UsersTab() {
   const [search, setSearch] = useState('')
   const { data, isLoading } = useAdminUsers(page, search)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [sort, setSort] = useState<
+    'name' | 'email' | 'plan' | 'role' | 'accounts'
+  >('name')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
 
   const handleTogglePlan = async (userId: string, currentPlan: string) => {
     setUpdatingId(userId)
@@ -169,6 +174,27 @@ function UsersTab() {
       toast.error(t('admin.planUpdateFailed'))
     }
     setUpdatingId(null)
+  }
+
+  const sortedUsers = data?.users
+    ? [...data.users].sort((a, b) => {
+        const aValue = sort === 'accounts' ? a._count.accounts : a[sort]
+        const bValue = sort === 'accounts' ? b._count.accounts : b[sort]
+        const difference =
+          typeof aValue === 'number' && typeof bValue === 'number'
+            ? aValue - bValue
+            : String(aValue).localeCompare(String(bValue))
+        return sortDirection === 'asc' ? difference : -difference
+      })
+    : []
+
+  const toggleSort = (key: typeof sort) => {
+    if (sort === key)
+      setSortDirection((direction) => (direction === 'asc' ? 'desc' : 'asc'))
+    else {
+      setSort(key)
+      setSortDirection('asc')
+    }
   }
 
   return (
@@ -187,22 +213,52 @@ function UsersTab() {
         <Loader className="m-auto" />
       ) : (
         <>
-          <div className="overflow-x-auto rounded-md border">
+          <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('admin.name')}</TableHead>
-                  <TableHead>{t('admin.email')}</TableHead>
-                  <TableHead>{t('admin.plan')}</TableHead>
-                  <TableHead>{t('admin.role')}</TableHead>
-                  <TableHead>{t('admin.accounts')}</TableHead>
+                  <SortableTableHead
+                    active={sort === 'name'}
+                    direction={sortDirection}
+                    onSort={() => toggleSort('name')}
+                  >
+                    {t('admin.name')}
+                  </SortableTableHead>
+                  <SortableTableHead
+                    active={sort === 'email'}
+                    direction={sortDirection}
+                    onSort={() => toggleSort('email')}
+                  >
+                    {t('admin.email')}
+                  </SortableTableHead>
+                  <SortableTableHead
+                    active={sort === 'plan'}
+                    direction={sortDirection}
+                    onSort={() => toggleSort('plan')}
+                  >
+                    {t('admin.plan')}
+                  </SortableTableHead>
+                  <SortableTableHead
+                    active={sort === 'role'}
+                    direction={sortDirection}
+                    onSort={() => toggleSort('role')}
+                  >
+                    {t('admin.role')}
+                  </SortableTableHead>
+                  <SortableTableHead
+                    active={sort === 'accounts'}
+                    direction={sortDirection}
+                    onSort={() => toggleSort('accounts')}
+                  >
+                    {t('admin.accounts')}
+                  </SortableTableHead>
                   <TableHead className="text-right">
                     {t('admin.actions')}
                   </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.users.map((user) => (
+                {sortedUsers.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.name}</TableCell>
                     <TableCell className="text-muted-foreground">
@@ -278,7 +334,7 @@ function FeedbackTab() {
   if (feedback.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
-        <MessageSquareHeart className="mb-4 h-16 w-16 text-gray-300" />
+        <MessageSquareHeart className="text-muted-foreground/40 mb-4 h-16 w-16" />
         <p className="text-muted-foreground">{t('admin.noFeedback')}</p>
       </div>
     )

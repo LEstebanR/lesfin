@@ -215,7 +215,7 @@ function CategoryRow({
   }
 
   return (
-    <div className="rounded-lg border p-3">
+    <div className="bg-muted/50 rounded-lg p-3">
       <div className="flex items-center justify-between gap-2">
         {isEditing ? (
           <InlineRename

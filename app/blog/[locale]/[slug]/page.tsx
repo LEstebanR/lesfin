@@ -150,7 +150,7 @@ export default async function BlogPostPage({
             </Link>
           )}
 
-          <div className="border-border bg-card mt-16 rounded-3xl border p-8 text-center">
+          <div className="bg-card shadow-soft mt-16 rounded-3xl p-8 text-center">
             <h2 className="text-2xl font-black tracking-tight">{ctaTitle}</h2>
             <p className="text-muted-foreground mt-2">{ctaSubtitle}</p>
             <Link href="/signup" className="mt-6 inline-block">

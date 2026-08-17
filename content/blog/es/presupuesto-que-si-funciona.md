@@ -9,7 +9,7 @@ La mayoría de los presupuestos fracasan por el mismo motivo: se arman una vez, 
 
 Un presupuesto que funciona no es el más detallado — es el que se revisa seguido y se ajusta sin culpa.
 
-## Empezar por lo que ya gastás, no por lo que "deberías" gastar
+## Empezar por lo que ya gastas, no por lo que "deberías" gastar
 
 El error más común es armar categorías ideales ("quiero gastar solo $200.000 en comida") sin haber mirado primero cuánto se gasta realmente. Antes de poner un número objetivo, hace falta al menos un mes de gastos reales registrados. Sin ese punto de partida, cualquier meta es una adivinanza.
 

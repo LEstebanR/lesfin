@@ -336,7 +336,7 @@ export function EditTransactionDialog({
               />
             </div>
             {canBeRecurring && (
-              <div className="flex flex-col gap-3 rounded-md border p-3">
+              <div className="bg-muted/50 flex flex-col gap-3 rounded-lg p-3">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="isRecurring" className="font-normal">
                     {t('budgets.convertToRecurring')}

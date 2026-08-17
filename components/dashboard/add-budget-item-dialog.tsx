@@ -215,7 +215,7 @@ export function AddBudgetItemDialog({
               type="text"
             />
             {(!isEditing || canConvertToRecurring) && (
-              <div className="flex flex-col gap-3 rounded-md border p-3">
+              <div className="bg-muted/50 flex flex-col gap-3 rounded-lg p-3">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="isRecurring" className="font-normal">
                     {isEditing
@@ -261,7 +261,7 @@ export function AddBudgetItemDialog({
               </div>
             )}
             {isEditing && item.recurringExpenseId && (
-              <div className="flex flex-col gap-2 rounded-md border p-3">
+              <div className="bg-muted/50 flex flex-col gap-2 rounded-lg p-3">
                 <p className="text-muted-foreground text-xs">
                   {t('budgets.thisItemIsRecurring')}
                 </p>
@@ -281,7 +281,7 @@ export function AddBudgetItemDialog({
               </div>
             )}
             {isEditing && item.debtId && (
-              <div className="rounded-md border p-3">
+              <div className="bg-muted/50 rounded-lg p-3">
                 <p className="text-muted-foreground text-xs">
                   {t('budgets.thisItemIsFromDebt', { name: item.description })}
                 </p>

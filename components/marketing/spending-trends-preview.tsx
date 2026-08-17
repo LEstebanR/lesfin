@@ -49,7 +49,7 @@ export function SpendingTrendsPreview() {
   const maxMonth = Math.max(...months)
 
   return (
-    <div className="border-border bg-card -rotate-2 rounded-2xl border shadow-2xl transition-transform duration-500 hover:rotate-0">
+    <div className="bg-card -rotate-2 rounded-2xl shadow-2xl transition-transform duration-500 hover:rotate-0">
       <div className="border-border flex items-center gap-1.5 border-b px-4 py-3">
         <span className="h-2.5 w-2.5 rounded-full bg-red-500/70" />
         <span className="h-2.5 w-2.5 rounded-full bg-yellow-500/70" />

@@ -19,14 +19,8 @@ import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Loader } from '../ui/loader'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '../ui/table'
+import { SortableTableHead } from '../ui/sortable-table-head'
+import { Table, TableBody, TableCell, TableHeader, TableRow } from '../ui/table'
 import { EditDebtDialog } from './edit-debt-dialog'
 
 type MovementType = 'payment' | 'interest' | 'purchase'
@@ -57,6 +51,10 @@ export function DebtDetail() {
     loadingDebts || loadingPayments || loadingInterest || loadingTransactions
 
   const [isEditOpen, setIsEditOpen] = useState(false)
+  const [sort, setSort] = useState<'type' | 'description' | 'amount' | 'date'>(
+    'date'
+  )
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
 
   const debt = debts.find((d) => d.id === debtId)
 
@@ -101,10 +99,31 @@ export function DebtDetail() {
       })
     }
 
-    return rows.sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    )
+    return rows
   }, [payments, interestCharges, purchases, t])
+
+  const sortedMovements = useMemo(() => {
+    return [...movements].sort((a, b) => {
+      const difference =
+        sort === 'type'
+          ? a.type.localeCompare(b.type)
+          : sort === 'description'
+            ? a.description.localeCompare(b.description)
+            : sort === 'amount'
+              ? a.signedAmount - b.signedAmount
+              : new Date(a.date).getTime() - new Date(b.date).getTime()
+      return sortDirection === 'asc' ? difference : -difference
+    })
+  }, [movements, sort, sortDirection])
+
+  const toggleSort = (key: typeof sort) => {
+    if (sort === key)
+      setSortDirection((direction) => (direction === 'asc' ? 'desc' : 'asc'))
+    else {
+      setSort(key)
+      setSortDirection('asc')
+    }
+  }
 
   const totalPaid = payments.reduce((sum, payment) => sum + payment.amount, 0)
   const totalInterest = interestCharges.reduce(
@@ -179,7 +198,7 @@ export function DebtDetail() {
           </Button>
         </div>
 
-        <div className="rounded-lg border p-6">
+        <div className="bg-muted/50 rounded-xl p-6">
           <p className="text-muted-foreground mb-1 text-sm">
             {t('debts.remainingBalance')}
           </p>
@@ -240,18 +259,42 @@ export function DebtDetail() {
               {t('debts.noMovements')}
             </p>
           ) : (
-            <div className="mt-4 rounded-md border">
+            <div className="mt-4">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('transactions.table.type')}</TableHead>
-                    <TableHead>{t('transactions.table.description')}</TableHead>
-                    <TableHead>{t('transactions.table.amount')}</TableHead>
-                    <TableHead>{t('transactions.table.date')}</TableHead>
+                    <SortableTableHead
+                      active={sort === 'type'}
+                      direction={sortDirection}
+                      onSort={() => toggleSort('type')}
+                    >
+                      {t('transactions.table.type')}
+                    </SortableTableHead>
+                    <SortableTableHead
+                      active={sort === 'description'}
+                      direction={sortDirection}
+                      onSort={() => toggleSort('description')}
+                    >
+                      {t('transactions.table.description')}
+                    </SortableTableHead>
+                    <SortableTableHead
+                      active={sort === 'amount'}
+                      direction={sortDirection}
+                      onSort={() => toggleSort('amount')}
+                    >
+                      {t('transactions.table.amount')}
+                    </SortableTableHead>
+                    <SortableTableHead
+                      active={sort === 'date'}
+                      direction={sortDirection}
+                      onSort={() => toggleSort('date')}
+                    >
+                      {t('transactions.table.date')}
+                    </SortableTableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {movements.map((movement) => (
+                  {sortedMovements.map((movement) => (
                     <TableRow key={`${movement.type}-${movement.id}`}>
                       <TableCell>
                         <Badge variant="secondary">

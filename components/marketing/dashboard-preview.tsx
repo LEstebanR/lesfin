@@ -44,7 +44,7 @@ export function DashboardPreview() {
   ] as const
 
   return (
-    <div className="border-border bg-card rotate-2 rounded-2xl border shadow-2xl transition-transform duration-500 hover:rotate-0">
+    <div className="bg-card rotate-2 rounded-2xl shadow-2xl transition-transform duration-500 hover:rotate-0">
       <div className="border-border flex items-center gap-1.5 border-b px-4 py-3">
         <span className="h-2.5 w-2.5 rounded-full bg-red-500/70" />
         <span className="h-2.5 w-2.5 rounded-full bg-yellow-500/70" />
@@ -63,13 +63,13 @@ export function DashboardPreview() {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <div className="border-border rounded-lg border p-3">
+          <div className="bg-muted/50 rounded-lg p-3">
             <p className="text-muted-foreground text-xs">
               {t('dashboardPreview.income')}
             </p>
             <p className="text-lg font-semibold text-green-500">+$3,200.00</p>
           </div>
-          <div className="border-border rounded-lg border p-3">
+          <div className="bg-muted/50 rounded-lg p-3">
             <p className="text-muted-foreground text-xs">
               {t('dashboardPreview.expenses')}
             </p>

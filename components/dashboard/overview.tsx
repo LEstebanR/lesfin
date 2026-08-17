@@ -11,6 +11,7 @@ import {
 } from '@/lib/queries'
 import { cn } from '@/lib/utils'
 import {
+  ArrowUpRight,
   DollarSign,
   Landmark,
   Lock,
@@ -361,23 +362,36 @@ export function Overview() {
   return (
     <div className="flex w-full flex-col items-center justify-center rounded-md p-4 md:mt-4 md:w-11/12 md:p-8">
       <div className="w-full space-y-6">
+        <div className="border-foreground/10 flex flex-col gap-2 border-b pb-6 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-muted-foreground text-[10px] font-black tracking-[0.24em] uppercase">
+              {t('overview.thisMonth')}
+            </p>
+            <h1 className="mt-2 text-4xl leading-none font-black tracking-tighter sm:text-5xl">
+              {t('overview.title')}
+            </h1>
+          </div>
+          <p className="text-muted-foreground max-w-xs text-sm sm:text-right">
+            {t('overview.recentActivityDesc')}
+          </p>
+        </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          <Card>
+          <Card className="bg-primary text-primary-foreground border-primary shadow-lift">
             <CardHeader className="flex min-h-10 flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
                 {t('overview.totalBalance')}
               </CardTitle>
-              <DollarSign className="text-muted-foreground h-4 w-4" />
+              <DollarSign className="text-primary-foreground/60 h-4 w-4" />
             </CardHeader>
             <CardContent>
               <div
-                className={`text-2xl font-bold ${
+                className={`text-2xl font-bold tracking-tight tabular-nums ${
                   getTotalBalance() < 0 ? 'text-red-600' : ''
                 }`}
               >
                 ${formatMoney(getTotalBalance(), currency)}
               </div>
-              <p className="text-muted-foreground text-xs">
+              <p className="text-primary-foreground/60 text-xs">
                 {t('overview.across')} {accounts.length}{' '}
                 {accounts.length === 1
                   ? t('overview.account')
@@ -394,7 +408,7 @@ export function Overview() {
               <Landmark className="text-muted-foreground h-4 w-4" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-2xl font-bold tracking-tight tabular-nums">
                 ${formatMoney(totalDebt, currency)}
               </div>
               <p className="text-muted-foreground text-xs">
@@ -411,7 +425,7 @@ export function Overview() {
               <Landmark className="text-muted-foreground h-4 w-4" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-2xl font-bold tracking-tight tabular-nums">
                 ${formatMoney(totalMinimumPayment, currency)}
               </div>
               <p className="text-muted-foreground text-xs">
@@ -435,7 +449,7 @@ export function Overview() {
             </CardHeader>
             <CardContent>
               <div
-                className={`text-2xl font-bold ${
+                className={`text-2xl font-bold tracking-tight tabular-nums ${
                   monthEndShortfall > 0 ? 'text-red-600' : 'text-green-600'
                 }`}
               >
@@ -457,14 +471,16 @@ export function Overview() {
           </Card>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('overview.accountSummary')}</CardTitle>
-            <CardDescription>
+        <section className="space-y-4">
+          <div>
+            <h2 className="text-lg font-black tracking-tight">
+              {t('overview.accountSummary')}
+            </h2>
+            <p className="text-muted-foreground text-sm">
               {t('overview.accountSummaryDesc')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+            </p>
+          </div>
+          <div>
             {accounts.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <span className="mb-2 text-4xl">🏦</span>
@@ -490,6 +506,7 @@ export function Overview() {
                         : account.type === 'caja'
                           ? t('accounts.caja')
                           : t('accounts.savings')
+                    const accountColor = account.color ?? 'var(--primary)'
                     return (
                       <Link
                         key={account.id}
@@ -497,22 +514,21 @@ export function Overview() {
                         className="block"
                       >
                         <Card
-                          className="transition-shadow hover:shadow-md"
-                          style={
-                            account.color
-                              ? {
-                                  borderLeftColor: account.color,
-                                  borderLeftWidth: '4px',
-                                }
-                              : undefined
-                          }
+                          className="group border-foreground/10 hover:shadow-lift relative overflow-hidden shadow-none transition-all hover:-translate-y-1"
+                          style={{
+                            borderColor: account.color
+                              ? `${account.color}55`
+                              : undefined,
+                            background: `linear-gradient(145deg, ${accountColor}14 0%, transparent 52%), var(--card)`,
+                          }}
                         >
-                          <CardHeader className="flex min-h-10 flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="truncate text-sm font-medium">
-                              {account.name}
-                            </CardTitle>
+                          <div
+                            className="absolute inset-x-0 top-0 h-1"
+                            style={{ backgroundColor: accountColor }}
+                          />
+                          <CardHeader className="flex min-h-10 flex-row items-start justify-between space-y-0 pt-5 pb-2">
                             {account.logoUrl ? (
-                              <div className="bg-muted h-7 w-7 shrink-0 overflow-hidden rounded-md border">
+                              <div className="bg-card h-10 w-10 shrink-0 overflow-hidden rounded-xl border p-1 shadow-sm">
                                 {/* eslint-disable-next-line @next/next/no-img-element -- external/dynamic logo domains, not worth remotePatterns config */}
                                 <img
                                   src={account.logoUrl}
@@ -523,32 +539,42 @@ export function Overview() {
                             ) : (
                               <div
                                 className={cn(
-                                  'shrink-0 rounded-md p-1.5',
-                                  !account.color && 'bg-primary/10'
+                                  'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
+                                  !account.color &&
+                                    'bg-primary text-primary-foreground'
                                 )}
                                 style={
                                   account.color
-                                    ? { backgroundColor: `${account.color}26` }
+                                    ? { backgroundColor: account.color }
                                     : undefined
                                 }
                               >
                                 <Icon
-                                  className={cn(
-                                    'h-4 w-4',
-                                    !account.color && 'text-primary'
-                                  )}
+                                  className="h-5 w-5"
                                   style={
                                     account.color
-                                      ? { color: account.color }
+                                      ? { color: 'white' }
                                       : undefined
                                   }
                                 />
                               </div>
                             )}
+                            <div className="ml-3 min-w-0 flex-1">
+                              <CardTitle className="truncate text-sm font-bold">
+                                {account.name}
+                              </CardTitle>
+                              <p className="text-muted-foreground mt-1 text-[10px] font-black tracking-[0.16em] uppercase">
+                                {typeLabel}
+                              </p>
+                            </div>
+                            <ArrowUpRight className="text-muted-foreground h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                           </CardHeader>
-                          <CardContent>
+                          <CardContent className="pt-2 pb-5">
+                            <p className="text-muted-foreground mb-1 text-[10px] font-black tracking-[0.16em] uppercase">
+                              {t('accounts.currentBalance')}
+                            </p>
                             <div
-                              className={`text-2xl font-bold ${
+                              className={`text-3xl font-black tracking-tighter tabular-nums ${
                                 Number(account.currentBalance) < 0
                                   ? 'text-red-600'
                                   : ''
@@ -560,9 +586,6 @@ export function Overview() {
                                 currency
                               )}
                             </div>
-                            <p className="text-muted-foreground text-xs">
-                              {typeLabel}
-                            </p>
                           </CardContent>
                         </Card>
                       </Link>
@@ -570,11 +593,11 @@ export function Overview() {
                   })}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </section>
 
         <Link href="?budget" className="block">
-          <Card className="transition-shadow hover:shadow-md">
+          <Card className="hover:shadow-lift transition-shadow">
             <CardHeader>
               <CardTitle>{t('overview.budgetProgress')}</CardTitle>
               <CardDescription>
@@ -601,7 +624,7 @@ export function Overview() {
                         {Math.round(budgetPercent)}%
                       </span>
                     </div>
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
+                    <div className="bg-muted h-2 w-full overflow-hidden rounded-full">
                       <div
                         className={`h-full rounded-full ${
                           totalBudgetSpent > totalBudgeted
@@ -800,7 +823,7 @@ export function Overview() {
                 {recentItems.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between border-b border-gray-100 pb-4 last:border-b-0"
+                    className="border-border flex items-center justify-between border-b pb-4 last:border-b-0"
                   >
                     <div className="flex items-center space-x-4">
                       <div

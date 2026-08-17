@@ -4,7 +4,7 @@ import { useCurrency } from '@/components/currency-provider'
 import { useLanguage } from '@/components/language-provider'
 import { formatMoney } from '@/lib/currency'
 import { useDebts } from '@/lib/queries'
-import { CreditCard, Landmark, PlusIcon, Wallet } from 'lucide-react'
+import { Check, CreditCard, Landmark, PlusIcon, Wallet } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import { Cell, Pie, PieChart } from 'recharts'
@@ -106,17 +106,31 @@ export function Debts() {
     const isPaidOff = debt.remainingBalance <= 0
 
     return (
-      <div className="flex flex-col rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
+      <div
+        className={`bg-card text-card-foreground shadow-soft flex flex-col rounded-xl p-4 transition-shadow ${
+          isPaidOff ? 'opacity-60' : 'hover:shadow-lift'
+        }`}
+      >
         <div className="mb-3 flex min-h-14 items-start justify-between gap-2">
           <Link href={`?debt&id=${debt.id}`} className="block min-w-0">
-            <h3 className="truncate text-base font-bold text-gray-900">
+            <h3 className="text-foreground truncate text-base font-bold">
               {debt.name}
             </h3>
-            {debt.type === 'credit_card' && (
-              <Badge variant="secondary" className="mt-1 gap-1">
-                <CreditCard className="h-3 w-3" />
-                {t('debts.creditCard')}
-              </Badge>
+            {(debt.type === 'credit_card' || isPaidOff) && (
+              <div className="mt-1 flex flex-wrap gap-1">
+                {debt.type === 'credit_card' && (
+                  <Badge variant="secondary" className="gap-1">
+                    <CreditCard className="h-3 w-3" />
+                    {t('debts.creditCard')}
+                  </Badge>
+                )}
+                {isPaidOff && (
+                  <Badge variant="outline" className="gap-1">
+                    <Check className="h-3 w-3" />
+                    {t('debts.paidOff')}
+                  </Badge>
+                )}
+              </div>
             )}
           </Link>
           <Button
@@ -130,24 +144,24 @@ export function Debts() {
 
         <Link href={`?debt&id=${debt.id}`} className="block">
           <div className="mb-3">
-            <p className="mb-0.5 text-xs text-gray-500">
+            <p className="text-muted-foreground mb-0.5 text-xs">
               {t('debts.remainingBalance')}
             </p>
             <p
-              className={`text-xl font-bold ${isPaidOff ? 'text-green-600' : 'text-gray-900'}`}
+              className={`text-xl font-bold ${isPaidOff ? 'text-muted-foreground' : 'text-foreground'}`}
             >
               ${formatMoney(debt.remainingBalance, currency)}
             </p>
           </div>
 
           <div className="mb-3">
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+            <div className="bg-muted h-1.5 w-full overflow-hidden rounded-full">
               <div
-                className={`h-full rounded-full ${isPaidOff ? 'bg-green-500' : 'bg-primary'}`}
+                className={`h-full rounded-full ${isPaidOff ? 'bg-muted-foreground/50' : 'bg-primary'}`}
                 style={{ width: `${percentPaid}%` }}
               />
             </div>
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="text-muted-foreground mt-1 text-xs">
               {isCreditCard && typeof debt.creditLimit === 'number'
                 ? t('debts.usedOfLimit', {
                     used: formatMoney(debt.remainingBalance, currency),
@@ -161,7 +175,7 @@ export function Debts() {
           </div>
 
           {typeof debt.creditLimit === 'number' && (
-            <p className="mb-2 text-xs text-gray-500">
+            <p className="text-muted-foreground mb-2 text-xs">
               {t('debts.availableCredit')}: $
               {formatMoney(
                 Math.max(0, debt.creditLimit - debt.remainingBalance),
@@ -175,7 +189,7 @@ export function Debts() {
 
           {(typeof debt.minimumPayment === 'number' ||
             typeof debt.paymentDueDay === 'number') && (
-            <div className="mb-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500">
+            <div className="text-muted-foreground mb-3 flex flex-wrap gap-x-3 gap-y-1 text-xs">
               {typeof debt.minimumPayment === 'number' && (
                 <span>
                   {t('debts.minimumPayment')}: $
@@ -325,11 +339,11 @@ export function Debts() {
           <Loader className="m-auto" />
         ) : debts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <Wallet className="mb-4 h-16 w-16 text-gray-300" />
-            <h3 className="mb-2 text-lg font-semibold text-gray-900">
+            <Wallet className="text-muted-foreground/40 mb-4 h-16 w-16" />
+            <h3 className="text-foreground mb-2 text-lg font-semibold">
               {t('debts.noDebtsYet')}
             </h3>
-            <p className="mb-6 max-w-sm text-gray-500">
+            <p className="text-muted-foreground mb-6 max-w-sm">
               {t('debts.noDebtsYetDesc')}
             </p>
             <AddDebtDialog
