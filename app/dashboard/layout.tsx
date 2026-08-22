@@ -133,7 +133,7 @@ export default async function AuthenticatedLayout({
       >
         <SidebarProvider>
           <AppSidebar isAdmin={user?.role === 'ADMIN'} />
-          <main className="bg-background flex min-h-svh w-full min-w-0 flex-col pt-16">
+          <main className="authenticated-surface flex min-h-svh w-full min-w-0 flex-col pt-16">
             <Header user={session?.user} />
             <CurrencyProvider currency={user?.currency ?? 'usd'}>
               <QueryProvider>

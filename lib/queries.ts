@@ -27,6 +27,7 @@ import {
   getTransactions,
   getTransfers,
 } from '@/app/dashboard/transactions/actions'
+import { useLanguage } from '@/components/language-provider'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 
 export const queryKeys = {
@@ -89,8 +90,10 @@ export function useSubscriptions() {
 }
 
 export function useCategories(type?: 'income' | 'expense') {
+  const { language } = useLanguage()
+
   return useQuery({
-    queryKey: queryKeys.categories(type),
+    queryKey: [...queryKeys.categories(type), language],
     queryFn: () => getCategories(type),
   })
 }

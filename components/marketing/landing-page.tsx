@@ -158,28 +158,12 @@ export function LandingPage() {
   ]
 
   return (
-    <div className="bg-background text-foreground flex flex-col items-center">
+    <div className="landing-surface text-foreground flex flex-col items-center">
       <Header path={pathname} />
 
       {/* Hero */}
       <section className="relative w-full overflow-hidden px-4 pt-32 pb-24 md:pt-44 md:pb-32">
-        <div className="absolute inset-0 -z-10 overflow-hidden [mask-image:radial-gradient(ellipse_at_top,black,transparent_70%)]">
-          <svg className="absolute inset-0 h-full w-full opacity-[0.06]">
-            <defs>
-              <pattern
-                id="hero-dots"
-                x="0"
-                y="0"
-                width="22"
-                height="22"
-                patternUnits="userSpaceOnUse"
-              >
-                <circle cx="1" cy="1" r="1" fill="currentColor" />
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#hero-dots)" />
-          </svg>
-        </div>
+        <div className="landing-hero-grid absolute inset-0 -z-10 [mask-image:linear-gradient(to_bottom,black,transparent_78%)] opacity-80" />
 
         <div className="mx-auto max-w-4xl text-center">
           <p
@@ -295,7 +279,7 @@ export function LandingPage() {
       </section>
 
       {/* Feature strip */}
-      <section className="border-border w-full border-y py-12">
+      <section className="bg-background border-border w-full border-y py-12">
         <p className="text-muted-foreground mb-8 text-center text-xs font-semibold tracking-[0.2em] uppercase">
           {t('landing.stripLabel')}
         </p>

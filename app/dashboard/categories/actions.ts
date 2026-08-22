@@ -8,56 +8,102 @@ import { z } from 'zod'
 const categoryNameSchema = requiredString
 const categoryTypeSchema = z.enum(['income', 'expense'])
 
-const DEFAULT_EXPENSE_CATEGORIES = [
-  'Alimentación',
-  'Caridad',
-  'Deuda',
-  'Educación',
-  'Entretenimiento',
-  'Familia',
-  'Hogar',
-  'Legal',
-  'Mascotas',
-  'Regalos',
-  'Ropa',
-  'Salud',
-  'Servicios',
-  'Transporte',
-  'Otros',
-]
+type CategoryLanguage = 'en' | 'es'
 
-const DEFAULT_INCOME_CATEGORIES = [
-  'Salario',
-  'Freelance',
-  'Inversiones',
-  'Reembolsos',
-  'Regalos recibidos',
-  'Otros ingresos',
-]
+const DEFAULT_CATEGORIES = [
+  { key: 'food', en: 'Food', es: 'Alimentación', type: 'expense' },
+  { key: 'charity', en: 'Charity', es: 'Caridad', type: 'expense' },
+  { key: 'debt', en: 'Debt', es: 'Deuda', type: 'expense' },
+  { key: 'education', en: 'Education', es: 'Educación', type: 'expense' },
+  {
+    key: 'entertainment',
+    en: 'Entertainment',
+    es: 'Entretenimiento',
+    type: 'expense',
+  },
+  { key: 'family', en: 'Family', es: 'Familia', type: 'expense' },
+  { key: 'home', en: 'Home', es: 'Hogar', type: 'expense' },
+  { key: 'legal', en: 'Legal', es: 'Legal', type: 'expense' },
+  { key: 'pets', en: 'Pets', es: 'Mascotas', type: 'expense' },
+  { key: 'gifts', en: 'Gifts', es: 'Regalos', type: 'expense' },
+  { key: 'clothing', en: 'Clothing', es: 'Ropa', type: 'expense' },
+  { key: 'health', en: 'Health', es: 'Salud', type: 'expense' },
+  { key: 'utilities', en: 'Utilities', es: 'Servicios', type: 'expense' },
+  { key: 'transport', en: 'Transport', es: 'Transporte', type: 'expense' },
+  { key: 'other', en: 'Other', es: 'Otros', type: 'expense' },
+  { key: 'salary', en: 'Salary', es: 'Salario', type: 'income' },
+  { key: 'freelance', en: 'Freelance', es: 'Freelance', type: 'income' },
+  { key: 'investments', en: 'Investments', es: 'Inversiones', type: 'income' },
+  { key: 'refunds', en: 'Refunds', es: 'Reembolsos', type: 'income' },
+  {
+    key: 'gifts-received',
+    en: 'Gifts received',
+    es: 'Regalos recibidos',
+    type: 'income',
+  },
+  {
+    key: 'other-income',
+    en: 'Other income',
+    es: 'Otros ingresos',
+    type: 'income',
+  },
+] as const
 
-function findMissingDefaults(existing: { name: string; type: string }[]) {
-  const existingKeys = new Set(
-    existing.map((c) => `${c.type}:${c.name.trim().toLowerCase()}`)
-  )
-  const defaults = [
-    ...DEFAULT_EXPENSE_CATEGORIES.map((name) => ({
-      name,
-      type: 'expense' as const,
-    })),
-    ...DEFAULT_INCOME_CATEGORIES.map((name) => ({
-      name,
-      type: 'income' as const,
-    })),
-  ]
-  return defaults.filter(
-    ({ name, type }) => !existingKeys.has(`${type}:${name.toLowerCase()}`)
-  )
+function defaultCategoryName(
+  category: (typeof DEFAULT_CATEGORIES)[number],
+  language: CategoryLanguage
+) {
+  return category[language]
+}
+
+export async function syncDefaultCategoriesForUser(
+  userId: string,
+  language: CategoryLanguage
+) {
+  const defaults = await prisma.category.findMany({
+    where: { userId, isDefault: true },
+    select: { id: true, name: true, type: true, defaultKey: true },
+  })
+
+  const updates = defaults.flatMap((existing) => {
+    const definition = DEFAULT_CATEGORIES.find(
+      (category) => category.key === existing.defaultKey
+    )
+    if (!definition) return []
+
+    const name = defaultCategoryName(definition, language)
+    return existing.name === name
+      ? []
+      : [prisma.category.update({ where: { id: existing.id }, data: { name } })]
+  })
+
+  await prisma.$transaction(updates)
+}
+
+function findMissingDefaults(
+  existing: { defaultKey: string | null }[],
+  language: CategoryLanguage
+) {
+  const existingKeys = new Set(existing.map((c) => c.defaultKey))
+  const defaults = DEFAULT_CATEGORIES.map((category) => ({
+    key: category.key,
+    name: defaultCategoryName(category, language),
+    type: category.type,
+  }))
+  return defaults.filter(({ key }) => !existingKeys.has(key))
 }
 
 export async function getCategoriesForUser(
   userId: string,
   type?: 'income' | 'expense'
 ) {
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { id: userId },
+    select: { language: true },
+  })
+  const language: CategoryLanguage = user.language === 'es' ? 'es' : 'en'
+  await syncDefaultCategoriesForUser(userId, language)
+
   const where = { userId, ...(type ? { type } : {}) }
   const categories = await prisma.category.findMany({
     where,
@@ -73,16 +119,17 @@ export async function getCategoriesForUser(
       ? categories
       : await prisma.category.findMany({
           where: { userId },
-          select: { name: true, type: true },
+          select: { defaultKey: true },
         })
-  const missing = findMissingDefaults(allCategories)
+  const missing = findMissingDefaults(allCategories, language)
   if (missing.length === 0) return categories
 
   await prisma.category.createMany({
-    data: missing.map(({ name, type: missingType }) => ({
+    data: missing.map(({ key, name, type: missingType }) => ({
       userId,
       name,
       type: missingType,
+      defaultKey: key,
       isDefault: true,
     })),
   })

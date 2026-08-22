@@ -1,5 +1,6 @@
 'use server'
 
+import { syncDefaultCategoriesForUser } from '@/app/dashboard/categories/actions'
 import { getUserPlan } from '@/lib/plan-limits'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from '@/lib/session'
@@ -66,6 +67,8 @@ export async function updateLanguage(language: string) {
   if (!session) throw new Error('Not authenticated')
 
   const parsed = languageSchema.parse(language)
+
+  await syncDefaultCategoriesForUser(session.user.id, parsed)
 
   await prisma.user.update({
     where: { id: session.user.id },

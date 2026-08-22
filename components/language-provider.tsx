@@ -56,12 +56,16 @@ export function LanguageProvider({
     setLanguageState(detectLanguage())
   }, [initialLanguage])
 
-  const setLanguage = (next: Language) => {
+  const setLanguage = async (next: Language) => {
+    try {
+      await onChange?.(next)
+    } catch (error: unknown) {
+      console.error('Error persisting language:', error)
+      return
+    }
+
     setLanguageState(next)
     window.localStorage.setItem(STORAGE_KEY, next)
-    onChange?.(next)?.catch((error: unknown) =>
-      console.error('Error persisting language:', error)
-    )
   }
 
   const t = (key: string, vars?: Record<string, string | number>) => {
