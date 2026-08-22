@@ -6,6 +6,7 @@ import { AdminView } from '@/components/dashboard/admin-view'
 import { Budgets } from '@/components/dashboard/budgets'
 import { DebtDetail } from '@/components/dashboard/debt-detail'
 import { Debts } from '@/components/dashboard/debts'
+import { McpGuide } from '@/components/dashboard/mcp-guide'
 import { Overview } from '@/components/dashboard/overview'
 import { Plan } from '@/components/dashboard/plan'
 import { Pricing } from '@/components/dashboard/pricing'
@@ -37,6 +38,7 @@ export default function Dashboard() {
       {currentView === 'plan' && <Plan />}
       {currentView === 'pricing' && <Pricing />}
       {currentView === 'settings' && <Settings />}
+      {currentView === 'mcp' && <McpGuide />}
       {currentView === 'admin' && profile?.role === 'ADMIN' && <AdminView />}
     </div>
   )

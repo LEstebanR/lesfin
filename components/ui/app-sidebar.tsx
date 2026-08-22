@@ -21,6 +21,7 @@ import {
   Home,
   Landmark,
   PiggyBank,
+  Plug,
   Repeat,
   Settings,
   Shield,
@@ -71,6 +72,7 @@ function AppSidebarContent({ isAdmin }: { isAdmin: boolean }) {
     { icon: <User />, label: t('nav.profile'), href: '?profile' },
     { icon: <Sparkles />, label: t('nav.plan'), href: '?plan' },
     { icon: <BadgeDollarSign />, label: t('nav.pricing'), href: '?pricing' },
+    { icon: <Plug />, label: t('nav.mcp'), href: '?mcp' },
     { icon: <Settings />, label: t('nav.settings'), href: '?settings' },
   ]
 

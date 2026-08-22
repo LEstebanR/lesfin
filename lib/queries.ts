@@ -18,6 +18,7 @@ import {
   getDebtPayments,
   getDebts,
 } from '@/app/dashboard/debts/actions'
+import { getMcpApiKeys } from '@/app/dashboard/mcp/actions'
 import { getOverviewData } from '@/app/dashboard/overview/actions'
 import { getPlanUsage } from '@/app/dashboard/plan/actions'
 import { getProfile } from '@/app/dashboard/profile/actions'
@@ -44,6 +45,7 @@ export const queryKeys = {
   overview: ['overview'] as const,
   profile: ['profile'] as const,
   planUsage: ['plan-usage'] as const,
+  mcpApiKeys: ['mcp-api-keys'] as const,
   budgetOverview: (month: number, year: number) =>
     ['budget-overview', month, year] as const,
   budgetItems: (month: number, year: number) =>
@@ -127,6 +129,10 @@ export function useProfile() {
 
 export function usePlanUsage() {
   return useQuery({ queryKey: queryKeys.planUsage, queryFn: getPlanUsage })
+}
+
+export function useMcpApiKeys() {
+  return useQuery({ queryKey: queryKeys.mcpApiKeys, queryFn: getMcpApiKeys })
 }
 
 export function useBudgetOverview(month: number, year: number) {

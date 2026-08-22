@@ -7,13 +7,16 @@ export const translations = {
       userSettings: 'User Settings',
       overview: 'Overview',
       accounts: 'Accounts',
+      account: 'Account',
       transactions: 'Transactions',
       debts: 'Debts',
+      debt: 'Debt',
       budget: 'Budget',
       subscriptions: 'Subscriptions',
       spendingTrends: 'Spending Trends',
       profile: 'Profile',
       settings: 'Settings',
+      mcp: 'AI assistant',
       plan: 'Plan',
       pricing: 'Pricing',
       admin: 'Admin',
@@ -466,6 +469,102 @@ export const translations = {
       deleteFailed: 'Failed to delete. Please try again.',
       debtPaymentLocked: 'Manage from Debts',
     },
+    mcpGuide: {
+      title: 'Connect an AI assistant',
+      intro:
+        'LESFin ships with an MCP server: a standard endpoint that lets an AI assistant read your finances and record movements for you, in plain language. Connect it once and you can ask "how much did I spend on food this month?" or say "I spent 12,000 on lunch" without opening the app.',
+      serverUrlLabel: 'Your server URL',
+      serverUrlDesc:
+        'This is the only thing you need to paste. It is unique to this app and always requires you to sign in.',
+      copy: 'Copy',
+      copied: 'Copied',
+      appsTitle: 'From the app you already use',
+      appsDesc:
+        'Nothing to install and no keys to handle. You paste the address above, sign in as usual, and approve access. This is the right path for almost everyone.',
+      claudeWebTitle: 'Claude — web or mobile',
+      claudeWebBadge: 'No API key',
+      claudeWebDesc:
+        'Works on claude.ai and in the mobile app. Claude asks you to sign in and authorize access, the same way any app connects to another.',
+      claudeWebStep1: 'Open Claude and go to Settings → Connectors.',
+      claudeWebStep2: 'Choose "Add custom connector".',
+      claudeWebStep3: 'Paste the server URL above and confirm.',
+      claudeWebStep4:
+        'Sign in with the same account you use here and approve the access request. The connector is available in your next chat.',
+      chatgptTitle: 'ChatGPT',
+      chatgptBadge: 'No API key',
+      chatgptDesc:
+        'Custom connectors live behind Developer mode. Available on Plus, Pro, Business, Enterprise and Education plans, and only in the web app — not on mobile.',
+      chatgptStep1:
+        'Open ChatGPT on the web and go to Settings → Apps → Advanced settings.',
+      chatgptStep2: 'Turn on Developer mode.',
+      chatgptStep3: 'Back in Apps, choose "Add custom connector".',
+      chatgptStep4:
+        'Paste the server URL above. Pick OAuth as the authentication method and complete the sign-in it prompts.',
+      chatgptStep5:
+        'Enable the connector in a new chat. Every tool the server exposes becomes available, subject to your confirmation settings.',
+      askTitle: 'What you can ask once connected',
+      ask1: 'What did I spend on food this month?',
+      ask2: 'I spent 45,000 on groceries with the debit card.',
+      ask3: 'What payments are due tomorrow?',
+      ask4: 'How long does my cash last at this rate?',
+      ask5: 'Move 200,000 from savings to my checking account.',
+      advancedTitle: 'Desktop and terminal apps',
+      advancedDesc:
+        'Only needed for Claude Desktop, Claude Code or Gemini CLI. These cannot sign you in through a browser, so they authenticate with an API key that you create below. If you are using Claude or ChatGPT on the web, you can stop reading here.',
+      keysTitle: 'Your API keys',
+      keysDesc:
+        'Create a key, copy it, and paste it into the app you are connecting. We only store a fingerprint of it, so it is shown once and cannot be recovered — if you lose it, revoke it and create another.',
+      keysNamePlaceholder: 'Name, for example: My laptop',
+      keysGenerate: 'Create key',
+      keysGenerating: 'Creating…',
+      keysNewTitle: 'Copy your key now',
+      keysNewWarning:
+        'This is the only time it will be shown. Once you close this, it cannot be recovered.',
+      keysDone: 'Done, I saved it',
+      keysEmpty: 'You have no keys yet.',
+      keysCreatedAt: 'Created {date}',
+      keysLastUsed: 'Last used {date}',
+      keysNeverUsed: 'Never used',
+      keysRevoke: 'Revoke',
+      keysRevoking: 'Revoking…',
+      keysRevokeConfirm:
+        'Revoke this key? Any app using it will stop working immediately.',
+      keysMaxReached:
+        'You reached the limit of active keys. Revoke one before creating another.',
+      keysError: 'Something went wrong. Try again.',
+      claudeDesktopTitle: 'Claude Desktop or Claude Code',
+      claudeDesktopDesc:
+        'Create a key above, then register the server. Replace YOUR_API_KEY with the key you copied.',
+      claudeDesktopNote:
+        'In Claude Desktop, add the same server under Settings → Developer → Edit config.',
+      geminiTitle: 'Gemini CLI',
+      geminiWarning:
+        'The consumer Gemini app cannot add custom MCP connectors yet — there is no add-a-connector option in the app. Custom MCP works through Gemini CLI, the Gemini API and Gemini Enterprise.',
+      geminiDesc:
+        'Create a key above, then register the server from your terminal:',
+      geminiCheck:
+        'Start Gemini CLI and run /mcp to confirm the server is listed and its tools loaded.',
+      geminiAltLabel: 'Alternative: edit the config file',
+      geminiAltDesc:
+        'You can also add it by hand in ~/.gemini/settings.json (user scope) or .gemini/settings.json (project scope):',
+      otherTitle: 'Any other MCP client',
+      otherDesc:
+        'The server follows the MCP standard, so any compatible client works. Point it at the URL above with these settings.',
+      otherTransport: 'Transport',
+      otherTransportValue: 'Streamable HTTP',
+      otherAuth: 'Authentication',
+      otherAuthValue:
+        'OAuth 2.1 with PKCE, or a Bearer token in the Authorization header',
+      otherDiscovery: 'Discovery',
+      toolsTitle: 'What it can do',
+      toolsDesc:
+        'The server exposes {count} tools. Reading is always safe; writing changes real data, and good clients ask before using those.',
+      toolsRead: 'Read',
+      toolsWrite: 'Create, edit and delete',
+      securityTitle: 'Before you connect',
+      securityDesc:
+        'A connected assistant sees the same financial data you see here, and can record or delete movements on your behalf. An API key equals full access to your account, so treat it like a password: never paste it into a chat or commit it to a repository. If a key leaks, revoke it here and create a new one.',
+    },
     settings: {
       language: 'Language',
       languageDesc: 'Choose the language for the app.',
@@ -473,6 +572,7 @@ export const translations = {
       mcpDesc:
         'LESFin exposes an MCP server so any compatible AI assistant can read your accounts and log transactions in natural language.',
       mcpEndpointLabel: 'Server URL',
+      mcpOpenGuide: 'Open the full guide',
       mcpWebMobileLabel: 'Claude web or mobile',
       mcpWebMobileDesc:
         'In Claude, go to Settings → Connectors → Add custom connector and paste the URL above. You’ll be asked to sign in and approve access — no API key needed.',
@@ -734,13 +834,16 @@ export const translations = {
       userSettings: 'Ajustes de usuario',
       overview: 'Resumen',
       accounts: 'Cuentas',
+      account: 'Cuenta',
       transactions: 'Transacciones',
       debts: 'Deudas',
+      debt: 'Deuda',
       budget: 'Presupuesto',
       subscriptions: 'Suscripciones',
       spendingTrends: 'Seguimiento de Gastos',
       profile: 'Perfil',
       settings: 'Configuración',
+      mcp: 'Asistente IA',
       plan: 'Plan',
       pricing: 'Precios',
       admin: 'Admin',
@@ -1402,6 +1505,102 @@ export const translations = {
       downloadReport: 'Descargar Markdown',
       exporting: 'Exportando...',
     },
+    mcpGuide: {
+      title: 'Conectar un asistente de IA',
+      intro:
+        'LESFin incluye un servidor MCP: un endpoint estándar que permite a un asistente de IA leer tus finanzas y registrar movimientos por ti, en lenguaje natural. Lo conectas una vez y ya puedes preguntar «¿cuánto gasté en comida este mes?» o decir «gasté 12.000 en el almuerzo» sin abrir la app.',
+      serverUrlLabel: 'La URL de tu servidor',
+      serverUrlDesc:
+        'Esto es lo único que necesitas pegar. Es única de esta app y siempre te va a pedir iniciar sesión.',
+      copy: 'Copiar',
+      copied: 'Copiado',
+      appsTitle: 'Desde la app que ya usas',
+      appsDesc:
+        'No hay nada que instalar ni claves que manejar. Pegas la dirección de arriba, inicias sesión como siempre y apruebas el acceso. Este es el camino correcto para casi todo el mundo.',
+      claudeWebTitle: 'Claude — web o móvil',
+      claudeWebBadge: 'Sin API key',
+      claudeWebDesc:
+        'Funciona en claude.ai y en la app móvil. Claude te pide iniciar sesión y autorizar el acceso, igual que cuando conectas cualquier app con otra.',
+      claudeWebStep1: 'Abre Claude y ve a Configuración → Connectors.',
+      claudeWebStep2: 'Elige «Add custom connector».',
+      claudeWebStep3: 'Pega la URL del servidor de arriba y confirma.',
+      claudeWebStep4:
+        'Inicia sesión con la misma cuenta que usas aquí y aprueba la solicitud de acceso. El conector queda disponible en tu siguiente conversación.',
+      chatgptTitle: 'ChatGPT',
+      chatgptBadge: 'Sin API key',
+      chatgptDesc:
+        'Los conectores personalizados están detrás del modo desarrollador. Disponible en los planes Plus, Pro, Business, Enterprise y Education, y solo en la app web — no en móvil.',
+      chatgptStep1:
+        'Abre ChatGPT en la web y ve a Configuración → Apps → Configuración avanzada.',
+      chatgptStep2: 'Activa el modo desarrollador (Developer mode).',
+      chatgptStep3: 'Vuelve a Apps y elige «Add custom connector».',
+      chatgptStep4:
+        'Pega la URL del servidor de arriba. Elige OAuth como método de autenticación y completa el inicio de sesión que te pida.',
+      chatgptStep5:
+        'Activa el conector en un chat nuevo. Todas las herramientas del servidor quedan disponibles, según tu configuración de confirmaciones.',
+      askTitle: 'Qué puedes pedirle una vez conectado',
+      ask1: '¿Cuánto gasté en comida este mes?',
+      ask2: 'Gasté 45.000 en el mercado con la tarjeta débito.',
+      ask3: '¿Qué pagos tengo pendientes para mañana?',
+      ask4: '¿Cuánto me dura la plata a este ritmo?',
+      ask5: 'Pasa 200.000 de ahorros a mi cuenta corriente.',
+      advancedTitle: 'Apps de escritorio y terminal',
+      advancedDesc:
+        'Solo hace falta para Claude Desktop, Claude Code o Gemini CLI. Estas no pueden iniciar tu sesión en el navegador, así que se autentican con una API key que creas aquí abajo. Si usas Claude o ChatGPT en la web, puedes dejar de leer aquí.',
+      keysTitle: 'Tus API keys',
+      keysDesc:
+        'Crea una clave, cópiala y pégala en la app que estés conectando. Solo guardamos una huella de la clave, así que se muestra una sola vez y no se puede recuperar — si la pierdes, revócala y crea otra.',
+      keysNamePlaceholder: 'Nombre, por ejemplo: Mi portátil',
+      keysGenerate: 'Crear clave',
+      keysGenerating: 'Creando…',
+      keysNewTitle: 'Copia tu clave ahora',
+      keysNewWarning:
+        'Esta es la única vez que se muestra. Cuando cierres esto, no se puede recuperar.',
+      keysDone: 'Listo, ya la guardé',
+      keysEmpty: 'Todavía no tienes claves.',
+      keysCreatedAt: 'Creada el {date}',
+      keysLastUsed: 'Último uso: {date}',
+      keysNeverUsed: 'Sin usar',
+      keysRevoke: 'Revocar',
+      keysRevoking: 'Revocando…',
+      keysRevokeConfirm:
+        '¿Revocar esta clave? Cualquier app que la esté usando va a dejar de funcionar de inmediato.',
+      keysMaxReached:
+        'Llegaste al límite de claves activas. Revoca una antes de crear otra.',
+      keysError: 'Algo salió mal. Inténtalo de nuevo.',
+      claudeDesktopTitle: 'Claude Desktop o Claude Code',
+      claudeDesktopDesc:
+        'Crea una clave arriba y luego registra el servidor. Reemplaza YOUR_API_KEY por la clave que copiaste.',
+      claudeDesktopNote:
+        'En Claude Desktop, agrega el mismo servidor desde Configuración → Developer → Edit config.',
+      geminiTitle: 'Gemini CLI',
+      geminiWarning:
+        'La app de Gemini para consumidores todavía no permite agregar conectores MCP personalizados — no existe esa opción en la app. El MCP personalizado funciona con Gemini CLI, la API de Gemini y Gemini Enterprise.',
+      geminiDesc:
+        'Crea una clave arriba y luego registra el servidor desde tu terminal:',
+      geminiCheck:
+        'Abre Gemini CLI y corre /mcp para confirmar que el servidor aparece y que cargó sus herramientas.',
+      geminiAltLabel: 'Alternativa: editar el archivo de configuración',
+      geminiAltDesc:
+        'También puedes agregarlo a mano en ~/.gemini/settings.json (ámbito de usuario) o .gemini/settings.json (ámbito de proyecto):',
+      otherTitle: 'Cualquier otro cliente MCP',
+      otherDesc:
+        'El servidor sigue el estándar MCP, así que funciona con cualquier cliente compatible. Apúntalo a la URL de arriba con estos parámetros.',
+      otherTransport: 'Transporte',
+      otherTransportValue: 'Streamable HTTP',
+      otherAuth: 'Autenticación',
+      otherAuthValue:
+        'OAuth 2.1 con PKCE, o un token Bearer en el header Authorization',
+      otherDiscovery: 'Descubrimiento',
+      toolsTitle: 'Qué puede hacer',
+      toolsDesc:
+        'El servidor expone {count} herramientas. Leer siempre es seguro; escribir modifica datos reales, y los clientes buenos te preguntan antes de usar esas.',
+      toolsRead: 'Leer',
+      toolsWrite: 'Crear, editar y borrar',
+      securityTitle: 'Antes de conectar',
+      securityDesc:
+        'Un asistente conectado ve los mismos datos financieros que ves aquí, y puede registrar o borrar movimientos en tu nombre. Una API key equivale a acceso completo a tu cuenta, así que trátala como una contraseña: nunca la pegues en un chat ni la subas a un repositorio. Si se filtra una clave, revócala aquí y crea una nueva.',
+    },
     settings: {
       language: 'Idioma',
       languageDesc: 'Elegir el idioma de la aplicación.',
@@ -1409,6 +1608,7 @@ export const translations = {
       mcpDesc:
         'LESFin expone un servidor MCP para que cualquier asistente de IA compatible pueda leer tus cuentas y registrar transacciones en lenguaje natural.',
       mcpEndpointLabel: 'URL del servidor',
+      mcpOpenGuide: 'Ver la guía completa',
       mcpWebMobileLabel: 'Claude web o móvil',
       mcpWebMobileDesc:
         'En Claude, ve a Configuración → Connectors → Add custom connector y pega la URL de arriba. Te va a pedir iniciar sesión y autorizar el acceso — no necesitas ninguna API key.',
