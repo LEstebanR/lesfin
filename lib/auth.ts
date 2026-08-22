@@ -3,7 +3,7 @@ import { prismaAdapter } from 'better-auth/adapters/prisma'
 
 import { prisma } from './prisma'
 
-const productionURL = 'https://personal-finances-chi.vercel.app'
+const productionURL = 'https://lesfin.app'
 
 export const baseURL =
   process.env.BETTER_AUTH_URL ??
@@ -14,6 +14,8 @@ export const baseURL =
 const trustedOrigins = [
   baseURL,
   productionURL,
+  'https://www.lesfin.app',
+  'https://personal-finances-chi.vercel.app',
   'https://personal-finances-lestebanrs-projects.vercel.app',
   'https://personal-finances-git-main-lestebanrs-projects.vercel.app',
 ]
