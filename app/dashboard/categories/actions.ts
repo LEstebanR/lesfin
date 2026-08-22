@@ -132,6 +132,7 @@ export async function getCategoriesForUser(
       defaultKey: key,
       isDefault: true,
     })),
+    skipDuplicates: true,
   })
 
   return prisma.category.findMany({
