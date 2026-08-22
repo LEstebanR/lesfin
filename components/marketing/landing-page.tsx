@@ -229,15 +229,6 @@ export function LandingPage() {
                 {t('landing.seeHowItWorks')}
               </Button>
             </Link>
-            <Link href="/pricing" className="w-full sm:w-auto">
-              <Button
-                size="lg"
-                variant="ghost"
-                className="h-12 w-full px-8 sm:w-auto"
-              >
-                {t('landing.seePricing')}
-              </Button>
-            </Link>
           </div>
           <p
             className="text-muted-foreground animate-fade-up mt-6 text-sm"
