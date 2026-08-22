@@ -1,4 +1,5 @@
 import { LanguageProvider } from '@/components/language-provider'
+import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Toaster } from 'sonner'
@@ -53,6 +54,8 @@ export const metadata: Metadata = {
     title: 'LESFin',
   },
   icons: {
+    icon: '/icon.png',
+    shortcut: '/icon.png',
     apple: '/icons/apple-touch-icon.png',
   },
 }
@@ -79,6 +82,7 @@ export default function RootLayout({
           <main className="flex-1">{children}</main>
           <Toaster richColors position="top-right" />
         </LanguageProvider>
+        <Analytics />
       </body>
     </html>
   )
