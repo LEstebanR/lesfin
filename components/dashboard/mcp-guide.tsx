@@ -2,6 +2,16 @@
 
 import { createMcpApiKey, revokeMcpApiKey } from '@/app/dashboard/mcp/actions'
 import { useLanguage } from '@/components/language-provider'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -127,6 +137,10 @@ function ApiKeyManager() {
   const [revokingId, setRevokingId] = useState<string | null>(null)
   const [newToken, setNewToken] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [keyToRevoke, setKeyToRevoke] = useState<{
+    id: string
+    name: string
+  } | null>(null)
 
   const locale = language === 'es' ? 'es-CO' : 'en-US'
   const formatDate = (value: Date | string) =>
@@ -158,10 +172,12 @@ function ApiKeyManager() {
     }
   }
 
-  const handleRevoke = async (id: string) => {
-    if (!window.confirm(t('mcpGuide.keysRevokeConfirm'))) return
+  const handleRevoke = async () => {
+    const id = keyToRevoke?.id
+    if (!id) return
     setError(null)
     setRevokingId(id)
+    setKeyToRevoke(null)
     try {
       await revokeMcpApiKey(id)
       await refresh()
@@ -250,7 +266,7 @@ function ApiKeyManager() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleRevoke(key.id)}
+                  onClick={() => setKeyToRevoke({ id: key.id, name: key.name })}
                   disabled={revokingId === key.id}
                 >
                   {revokingId === key.id
@@ -262,6 +278,30 @@ function ApiKeyManager() {
           </ul>
         ) : null}
       </CardContent>
+
+      <AlertDialog
+        open={keyToRevoke !== null}
+        onOpenChange={(open) => {
+          if (!open) setKeyToRevoke(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('mcpGuide.keysRevokeTitle', { name: keyToRevoke?.name ?? '' })}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('mcpGuide.keysRevokeConfirm')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('mcpGuide.keysCancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleRevoke}>
+              {t('mcpGuide.keysRevoke')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   )
 }

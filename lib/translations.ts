@@ -526,6 +526,8 @@ export const translations = {
       keysLastUsed: 'Last used {date}',
       keysNeverUsed: 'Never used',
       keysRevoke: 'Revoke',
+      keysRevokeTitle: 'Revoke "{name}"?',
+      keysCancel: 'Cancel',
       keysRevoking: 'Revoking…',
       keysRevokeConfirm:
         'Revoke this key? Any app using it will stop working immediately.',
@@ -1562,6 +1564,8 @@ export const translations = {
       keysLastUsed: 'Último uso: {date}',
       keysNeverUsed: 'Sin usar',
       keysRevoke: 'Revocar',
+      keysRevokeTitle: '¿Revocar «{name}»?',
+      keysCancel: 'Cancelar',
       keysRevoking: 'Revocando…',
       keysRevokeConfirm:
         '¿Revocar esta clave? Cualquier app que la esté usando va a dejar de funcionar de inmediato.',
