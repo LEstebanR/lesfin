@@ -333,7 +333,7 @@ function FeedbackTab() {
 
   if (feedback.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
+      <div className="bg-card text-card-foreground border-border shadow-soft flex flex-col items-center justify-center rounded-2xl border py-12 text-center">
         <MessageSquareHeart className="text-muted-foreground/40 mb-4 h-16 w-16" />
         <p className="text-muted-foreground">{t('admin.noFeedback')}</p>
       </div>

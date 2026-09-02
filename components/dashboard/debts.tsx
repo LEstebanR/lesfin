@@ -338,7 +338,7 @@ export function Debts() {
         {loading ? (
           <Loader className="m-auto" />
         ) : debts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="bg-card text-card-foreground border-border shadow-soft flex flex-col items-center justify-center rounded-2xl border py-12 text-center">
             <Wallet className="text-muted-foreground/40 mb-4 h-16 w-16" />
             <h3 className="text-foreground mb-2 text-lg font-semibold">
               {t('debts.noDebtsYet')}

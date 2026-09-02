@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Footer } from '@/components/ui/footer'
 import { Header } from '@/components/ui/header'
-import { Check, Sparkles } from 'lucide-react'
+import { Check } from 'lucide-react'
 import Link from 'next/link'
 
 const PRO_MONTHLY_PRICE = '$2.99'
@@ -98,10 +98,6 @@ export function PricingPage() {
 
           <Reveal delay={100}>
             <div className="bg-primary text-primary-foreground shadow-lift relative flex h-full flex-col rounded-2xl border-2 border-transparent p-8">
-              <Badge className="absolute -top-3 left-8 gap-1">
-                <Sparkles className="h-3 w-3" />
-                {t('pricing.mostPopular')}
-              </Badge>
               <h2 className="text-2xl font-black tracking-tight">
                 {t('pricing.proName')}
               </h2>
@@ -116,9 +112,11 @@ export function PricingPage() {
                   {t('pricing.perMonth')}
                 </span>
               </div>
-              <Button className="mt-6 w-full" disabled variant="secondary">
-                {t('pricing.comingSoon')}
-              </Button>
+              <Link href="/login" className="mt-6">
+                <Button className="w-full" variant="secondary">
+                  {t('plan.upgradeNow')}
+                </Button>
+              </Link>
               <ul className="mt-8 space-y-3">
                 {proFeatures.map((feature) => (
                   <li

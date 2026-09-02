@@ -16,12 +16,11 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 import {
-  BadgeDollarSign,
+  ChevronDown,
   CreditCard,
   Home,
   Landmark,
   PiggyBank,
-  Plug,
   Repeat,
   Settings,
   Shield,
@@ -32,7 +31,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { Suspense } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 
 import { Logo } from './logo'
 
@@ -41,6 +40,31 @@ function AppSidebarContent({ isAdmin }: { isAdmin: boolean }) {
   const { t } = useLanguage()
   const searchParams = useSearchParams()
   const currentView = Array.from(searchParams.entries())[0]?.[0] || 'overview'
+  const contentRef = useRef<HTMLDivElement>(null)
+  const [showScrollHint, setShowScrollHint] = useState(false)
+
+  useEffect(() => {
+    const content = contentRef.current
+    if (!content || !isMobile) return
+
+    const updateScrollHint = () => {
+      const canScroll = content.scrollHeight > content.clientHeight + 4
+      const hasMoreBelow =
+        content.scrollTop + content.clientHeight < content.scrollHeight - 4
+      setShowScrollHint(canScroll && hasMoreBelow)
+    }
+
+    updateScrollHint()
+    content.addEventListener('scroll', updateScrollHint, { passive: true })
+    window.addEventListener('resize', updateScrollHint)
+    const resizeObserver = new ResizeObserver(updateScrollHint)
+    resizeObserver.observe(content)
+    return () => {
+      content.removeEventListener('scroll', updateScrollHint)
+      window.removeEventListener('resize', updateScrollHint)
+      resizeObserver.disconnect()
+    }
+  }, [isMobile])
 
   const closeOnMobile = () => {
     if (isMobile) setOpenMobile(false)
@@ -71,8 +95,6 @@ function AppSidebarContent({ isAdmin }: { isAdmin: boolean }) {
   const optionsSettings = [
     { icon: <User />, label: t('nav.profile'), href: '?profile' },
     { icon: <Sparkles />, label: t('nav.plan'), href: '?plan' },
-    { icon: <BadgeDollarSign />, label: t('nav.pricing'), href: '?pricing' },
-    { icon: <Plug />, label: t('nav.mcp'), href: '?mcp' },
     { icon: <Settings />, label: t('nav.settings'), href: '?settings' },
   ]
 
@@ -81,7 +103,7 @@ function AppSidebarContent({ isAdmin }: { isAdmin: boolean }) {
       <SidebarHeader className="border-sidebar-border border-b p-5">
         <Logo />
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent ref={contentRef}>
         <SidebarGroup>
           <SidebarGroupLabel className="text-sidebar-foreground/45 px-2 text-[10px] font-bold tracking-[0.2em] uppercase">
             {t('nav.menu')}
@@ -110,6 +132,14 @@ function AppSidebarContent({ isAdmin }: { isAdmin: boolean }) {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        {showScrollHint && (
+          <div className="from-sidebar via-sidebar/95 pointer-events-none sticky bottom-0 z-10 -mt-10 flex h-10 items-end justify-center bg-gradient-to-t to-transparent pb-1 text-[10px] font-bold tracking-[0.16em] uppercase md:hidden">
+            <span className="bg-sidebar/90 text-sidebar-foreground/60 flex items-center gap-1 rounded-full px-2 py-1 backdrop-blur-sm">
+              {t('nav.scrollForMore')}
+              <ChevronDown className="h-3 w-3" />
+            </span>
+          </div>
+        )}
       </SidebarContent>
       <SidebarFooter>
         {isAdmin && (
@@ -132,9 +162,6 @@ function AppSidebarContent({ isAdmin }: { isAdmin: boolean }) {
           </SidebarGroup>
         )}
         <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/45 px-2 text-[10px] font-bold tracking-[0.2em] uppercase">
-            {t('nav.userSettings')}
-          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {optionsSettings.map((option) => {

@@ -184,7 +184,7 @@ export function SpendingTrends() {
       {loading ? (
         <Loader className="m-auto" />
       ) : rows.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-10 text-center">
+        <div className="bg-card text-card-foreground border-border shadow-soft flex flex-col items-center justify-center rounded-2xl border py-10 text-center">
           <Table className="text-muted-foreground/40 mb-3 h-12 w-12" />
           <p className="text-muted-foreground text-sm">
             {t('spendingTrends.noData')}

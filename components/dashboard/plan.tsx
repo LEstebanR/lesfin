@@ -1,5 +1,9 @@
 'use client'
 
+import {
+  createProCheckout,
+  openBillingPortal,
+} from '@/app/dashboard/plan/billing-actions'
 import { useLanguage } from '@/components/language-provider'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -13,13 +17,40 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { FREE_LIMITS } from '@/lib/plan-limits-shared'
 import { usePlanUsage } from '@/lib/queries'
-import { Check, Sparkles } from 'lucide-react'
+import { Check } from 'lucide-react'
+import { useState } from 'react'
+import { toast } from 'sonner'
 
 const PRO_MONTHLY_PRICE = '$2.99'
 
 export function Plan() {
   const { t } = useLanguage()
   const { data, isLoading } = usePlanUsage()
+  const [isRedirecting, setIsRedirecting] = useState(false)
+
+  async function goToCheckout() {
+    setIsRedirecting(true)
+    try {
+      const { url } = await createProCheckout()
+      window.location.assign(url)
+    } catch (error) {
+      console.error(error)
+      toast.error(t('plan.checkoutError'))
+      setIsRedirecting(false)
+    }
+  }
+
+  async function goToPortal() {
+    setIsRedirecting(true)
+    try {
+      const { url } = await openBillingPortal()
+      window.location.assign(url)
+    } catch (error) {
+      console.error(error)
+      toast.error(t('plan.billingError'))
+      setIsRedirecting(false)
+    }
+  }
 
   if (isLoading || !data) {
     return (
@@ -82,6 +113,17 @@ export function Plan() {
             <CardTitle>{t('plan.unlimitedTitle')}</CardTitle>
             <CardDescription>{t('plan.unlimitedDesc')}</CardDescription>
           </CardHeader>
+          <CardContent>
+            <Button
+              onClick={goToPortal}
+              disabled={isRedirecting}
+              variant="outline"
+            >
+              {isRedirecting
+                ? t('plan.openingBilling')
+                : t('plan.manageBilling')}
+            </Button>
+          </CardContent>
         </Card>
       ) : (
         <>
@@ -127,13 +169,7 @@ export function Plan() {
 
           <Card className="border-primary border-2">
             <CardHeader>
-              <div className="flex items-center gap-2">
-                <CardTitle>{t('plan.upgradeTitle')}</CardTitle>
-                <Badge className="gap-1">
-                  <Sparkles className="h-3 w-3" />
-                  {t('pricing.mostPopular')}
-                </Badge>
-              </div>
+              <CardTitle>{t('plan.upgradeTitle')}</CardTitle>
               <CardDescription>{t('plan.upgradeDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
@@ -158,8 +194,15 @@ export function Plan() {
                   </li>
                 ))}
               </ul>
-              <Button className="mt-6 w-full" disabled variant="secondary">
-                {t('pricing.comingSoon')}
+              <Button
+                className="mt-6 w-full"
+                onClick={goToCheckout}
+                disabled={isRedirecting}
+                variant="secondary"
+              >
+                {isRedirecting
+                  ? t('plan.openingCheckout')
+                  : t('plan.upgradeNow')}
               </Button>
             </CardContent>
           </Card>

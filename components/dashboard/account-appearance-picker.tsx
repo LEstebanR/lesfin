@@ -3,7 +3,7 @@
 import { uploadAccountLogo } from '@/app/dashboard/accounts/actions'
 import { useLanguage } from '@/components/language-provider'
 import { ACCOUNT_ICONS } from '@/lib/account-icons'
-import { ACCOUNT_COLOR_PALETTE, suggestLogoUrl } from '@/lib/bank-logos'
+import { ACCOUNT_COLOR_PALETTE } from '@/lib/bank-logos'
 import { cn } from '@/lib/utils'
 import { Loader, Upload, X } from 'lucide-react'
 import { useRef, useState } from 'react'
@@ -12,8 +12,61 @@ import { toast } from 'sonner'
 import { Button } from '../ui/button'
 import { Label } from '../ui/label'
 
+const MAX_LOGO_SIZE = 1024 * 1024
+const MAX_LOGO_DIMENSION = 1200
+
+function loadImage(file: File) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image()
+    const objectUrl = URL.createObjectURL(file)
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl)
+      resolve(image)
+    }
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl)
+      reject(new Error('Could not read image'))
+    }
+    image.src = objectUrl
+  })
+}
+
+function canvasBlob(canvas: HTMLCanvasElement, quality: number) {
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (blob) =>
+        blob ? resolve(blob) : reject(new Error('Could not compress image')),
+      'image/webp',
+      quality
+    )
+  })
+}
+
+async function optimizeLogo(file: File) {
+  const image = await loadImage(file)
+  const scale = Math.min(
+    1,
+    MAX_LOGO_DIMENSION / image.naturalWidth,
+    MAX_LOGO_DIMENSION / image.naturalHeight
+  )
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.max(1, Math.round(image.naturalWidth * scale))
+  canvas.height = Math.max(1, Math.round(image.naturalHeight * scale))
+  const context = canvas.getContext('2d')
+  if (!context) throw new Error('Could not prepare image')
+  context.drawImage(image, 0, 0, canvas.width, canvas.height)
+
+  for (const quality of [0.8, 0.65, 0.5]) {
+    const blob = await canvasBlob(canvas, quality)
+    if (blob.size <= MAX_LOGO_SIZE) {
+      return new File([blob], 'account-logo.webp', { type: 'image/webp' })
+    }
+  }
+
+  throw new Error('Image is too large')
+}
+
 export function AccountAppearancePicker({
-  accountName,
   color,
   onColorChange,
   logoUrl,
@@ -21,7 +74,6 @@ export function AccountAppearancePicker({
   icon,
   onIconChange,
 }: {
-  accountName: string
   color: string | null
   onColorChange: (color: string | null) => void
   logoUrl: string | null
@@ -33,12 +85,6 @@ export function AccountAppearancePicker({
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const suggestedLogoUrl = accountName.trim()
-    ? suggestLogoUrl(accountName)
-    : null
-  const isUsingSuggested =
-    suggestedLogoUrl !== null && logoUrl === suggestedLogoUrl
-
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     e.target.value = ''
@@ -46,21 +92,21 @@ export function AccountAppearancePicker({
 
     setIsUploading(true)
     try {
+      const optimizedFile = await optimizeLogo(file)
       const uploadData = new FormData()
-      uploadData.append('logo', file)
+      uploadData.append('logo', optimizedFile)
       const url = await uploadAccountLogo(uploadData)
       onIconChange(null)
       onLogoChange(url)
     } catch (error) {
       console.error('Error uploading logo:', error)
-      toast.error(t('accounts.logoUploadFailed'))
+      toast.error(
+        error instanceof Error && error.message === 'Image is too large'
+          ? t('accounts.logoTooLarge')
+          : t('accounts.logoUploadFailed')
+      )
     }
     setIsUploading(false)
-  }
-
-  const applyLogo = (url: string) => {
-    onIconChange(null)
-    onLogoChange(url)
   }
 
   const applyIcon = (name: string) => {
@@ -94,14 +140,13 @@ export function AccountAppearancePicker({
         <div className="flex items-center gap-3">
           <div
             className={cn(
-              'bg-muted flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border',
-              !logoUrl && suggestedLogoUrl && 'border-dashed opacity-60'
+              'bg-muted flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border'
             )}
           >
-            {logoUrl || suggestedLogoUrl ? (
+            {logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element -- external/dynamic logo domains, not worth remotePatterns config
               <img
-                src={logoUrl ?? suggestedLogoUrl ?? undefined}
+                src={logoUrl}
                 alt=""
                 className="h-full w-full object-contain"
               />
@@ -110,16 +155,6 @@ export function AccountAppearancePicker({
             )}
           </div>
           <div className="flex flex-1 flex-wrap items-center gap-2">
-            {suggestedLogoUrl && !isUsingSuggested && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => applyLogo(suggestedLogoUrl)}
-              >
-                {t('accounts.useThisLogo')}
-              </Button>
-            )}
             <Button
               type="button"
               variant="outline"
@@ -132,7 +167,7 @@ export function AccountAppearancePicker({
               ) : (
                 <Upload className="h-4 w-4" />
               )}
-              {t('accounts.uploadYourOwn')}
+              {t('accounts.uploadLogo')}
             </Button>
             {logoUrl && (
               <Button

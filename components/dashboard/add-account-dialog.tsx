@@ -64,16 +64,14 @@ export function AddAccountDialog({
     defaultValues: {
       accountName: '',
       accountType: defaultType ?? 'savings',
-      initialBalance: '',
+      initialBalance: '0',
     },
   })
-  const accountName = form.watch('accountName')
-
   const resetAppearance = () => {
     form.reset({
       accountName: '',
       accountType: defaultType ?? 'savings',
-      initialBalance: '',
+      initialBalance: '0',
     })
     setColor(null)
     setLogoUrl(null)
@@ -144,7 +142,6 @@ export function AddAccountDialog({
               <Textarea name="description" className="resize-none" />
             </div>
             <AccountAppearancePicker
-              accountName={accountName}
               color={color}
               onColorChange={setColor}
               logoUrl={logoUrl}

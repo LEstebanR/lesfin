@@ -13,6 +13,7 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname !== '/signup' &&
     !request.nextUrl.pathname.startsWith('/api/auth') &&
     !request.nextUrl.pathname.startsWith('/api/mcp') &&
+    !request.nextUrl.pathname.startsWith('/api/webhooks/polar') &&
     !request.nextUrl.pathname.startsWith('/oauth') &&
     !request.nextUrl.pathname.startsWith(
       '/.well-known/oauth-authorization-server'
@@ -26,7 +27,8 @@ export async function middleware(request: NextRequest) {
 
   if (
     sessionCookie &&
-    (request.nextUrl.pathname === '/login' ||
+    (request.nextUrl.pathname === '/' ||
+      request.nextUrl.pathname === '/login' ||
       request.nextUrl.pathname === '/signup')
   ) {
     return NextResponse.redirect(new URL('/dashboard', request.url))

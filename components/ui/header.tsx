@@ -104,12 +104,6 @@ function LandingHeaderContent() {
         </Link>
         <div className="hidden items-center gap-4 md:flex">
           <Link
-            href="/blog"
-            className="text-muted-foreground hover:text-foreground text-sm font-medium"
-          >
-            {t('header.blog')}
-          </Link>
-          <Link
             href="/pricing"
             className="text-muted-foreground hover:text-foreground text-sm font-medium"
           >
@@ -133,9 +127,6 @@ function LandingHeaderContent() {
               align="end"
               className="mt-3 w-[calc(100vw-2rem)] rounded-t-none"
             >
-              <Link href="/blog" className="flex items-center gap-2">
-                <DropdownMenuItem>{t('header.blog')}</DropdownMenuItem>
-              </Link>
               <Link href="/pricing" className="flex items-center gap-2">
                 <DropdownMenuItem>{t('header.pricing')}</DropdownMenuItem>
               </Link>

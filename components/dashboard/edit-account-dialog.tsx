@@ -131,7 +131,6 @@ export function EditAccountDialog({
               />
             </div>
             <AccountAppearancePicker
-              accountName={form.watch('name')}
               color={color}
               onColorChange={setColor}
               logoUrl={logoUrl}

@@ -1,7 +1,7 @@
 'use client'
 
+import { createProCheckout } from '@/app/dashboard/plan/billing-actions'
 import { useLanguage } from '@/components/language-provider'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -10,12 +10,27 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Check, Sparkles } from 'lucide-react'
+import { Check } from 'lucide-react'
+import { useState } from 'react'
+import { toast } from 'sonner'
 
 const PRO_MONTHLY_PRICE = '$2.99'
 
 export function Pricing() {
   const { t } = useLanguage()
+  const [isRedirecting, setIsRedirecting] = useState(false)
+
+  async function goToCheckout() {
+    setIsRedirecting(true)
+    try {
+      const { url } = await createProCheckout()
+      window.location.assign(url)
+    } catch (error) {
+      console.error(error)
+      toast.error(t('plan.checkoutError'))
+      setIsRedirecting(false)
+    }
+  }
 
   const freeFeatures = [
     t('pricing.freeFeature1'),
@@ -77,10 +92,6 @@ export function Pricing() {
         </Card>
 
         <Card className="border-primary relative flex h-full flex-col border-2">
-          <Badge className="absolute -top-3 left-6 gap-1">
-            <Sparkles className="h-3 w-3" />
-            {t('pricing.mostPopular')}
-          </Badge>
           <CardHeader>
             <CardTitle className="text-2xl">{t('pricing.proName')}</CardTitle>
             <CardDescription>{t('pricing.proDescription')}</CardDescription>
@@ -94,8 +105,13 @@ export function Pricing() {
             </div>
           </CardHeader>
           <CardContent className="flex flex-1 flex-col">
-            <Button className="w-full" disabled variant="secondary">
-              {t('pricing.comingSoon')}
+            <Button
+              className="w-full"
+              onClick={goToCheckout}
+              disabled={isRedirecting}
+              variant="secondary"
+            >
+              {isRedirecting ? t('plan.openingCheckout') : t('plan.upgradeNow')}
             </Button>
             <FeatureList features={proFeatures} />
           </CardContent>

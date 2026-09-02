@@ -243,8 +243,12 @@ export function LandingPage() {
           style={{ animationDelay: '360ms' }}
         >
           <div className="grid items-center gap-8 sm:grid-cols-2 sm:gap-6">
-            <DashboardPreview />
-            <SpendingTrendsPreview />
+            <div className="animate-float-slow">
+              <DashboardPreview />
+            </div>
+            <div className="animate-float-slower sm:mt-8">
+              <SpendingTrendsPreview />
+            </div>
           </div>
           <div
             className="animate-fade-up bg-card shadow-lift absolute -top-5 -left-6 z-10 hidden items-center gap-2 rounded-full px-4 py-2.5 sm:flex"
@@ -373,7 +377,7 @@ export function LandingPage() {
           <div className="grid gap-6 md:grid-cols-3">
             {capabilities.map((capability, i) => (
               <Reveal key={capability.title} delay={i * 100}>
-                <div className="bg-card shadow-soft flex h-full flex-col gap-4 rounded-3xl p-7">
+                <div className="bg-card shadow-soft hover:shadow-lift flex h-full flex-col gap-4 rounded-3xl p-7 transition-transform duration-500 ease-out hover:-translate-y-1">
                   <div className="bg-primary/10 flex h-11 w-11 items-center justify-center rounded-xl">
                     <capability.icon
                       className="text-primary h-5 w-5"
@@ -412,7 +416,7 @@ export function LandingPage() {
           <div className="grid gap-6 md:grid-cols-3">
             {steps.map((step, i) => (
               <Reveal key={step.number} delay={i * 100}>
-                <div className="bg-card shadow-soft flex h-full flex-col gap-5 rounded-3xl p-6">
+                <div className="bg-card shadow-soft hover:shadow-lift flex h-full flex-col gap-5 rounded-3xl p-6 transition-transform duration-500 ease-out hover:-translate-y-1">
                   <span className="text-primary/15 block text-5xl leading-none font-black tracking-tighter tabular-nums">
                     {step.number}
                   </span>
@@ -552,7 +556,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      <Footer />
+      <Footer showBlog />
     </div>
   )
 }

@@ -9,7 +9,6 @@ import { Debts } from '@/components/dashboard/debts'
 import { McpGuide } from '@/components/dashboard/mcp-guide'
 import { Overview } from '@/components/dashboard/overview'
 import { Plan } from '@/components/dashboard/plan'
-import { Pricing } from '@/components/dashboard/pricing'
 import { Profile } from '@/components/dashboard/profile'
 import { Settings } from '@/components/dashboard/settings'
 import { SpendingTrends } from '@/components/dashboard/spending-trends'
@@ -36,7 +35,6 @@ export default function Dashboard() {
       {currentView === 'overview' && <Overview />}
       {currentView === 'profile' && <Profile />}
       {currentView === 'plan' && <Plan />}
-      {currentView === 'pricing' && <Pricing />}
       {currentView === 'settings' && <Settings />}
       {currentView === 'mcp' && <McpGuide />}
       {currentView === 'admin' && profile?.role === 'ADMIN' && <AdminView />}

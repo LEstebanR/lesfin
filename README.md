@@ -25,6 +25,28 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
+## Polar billing
+
+Configure one recurring Pro product in Polar Sandbox for local development and another in Polar Production for the deployed app. Use the matching product ID and access token in each environment.
+
+Local `.env`:
+
+```text
+POLAR_ACCESS_TOKEN=polar_sandbox_oat_...
+POLAR_PRO_PRODUCT_ID=<sandbox-product-id>
+POLAR_WEBHOOK_SECRET=<sandbox-webhook-secret>
+```
+
+Vercel Production:
+
+```text
+POLAR_ACCESS_TOKEN=polar_oat_...
+POLAR_PRO_PRODUCT_ID=<production-product-id>
+POLAR_WEBHOOK_SECRET=<production-webhook-secret>
+```
+
+For local webhooks, run `polar listen http://localhost:3000` and use the generated Sandbox secret; Polar will forward events to `/api/webhooks/polar`. For production, register `https://lesfin.app/api/webhooks/polar` in Polar Production. Subscribe the endpoint to the subscription lifecycle events handled by the route and use the raw delivery format. Local code always selects Sandbox; only a production build selects Production. The migration is applied by the normal `bun run build` command.
+
 ## Deploy on Vercel
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.

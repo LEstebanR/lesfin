@@ -33,6 +33,7 @@ import {
   YAxis,
 } from 'recharts'
 
+import { Button } from '../ui/button'
 import {
   Card,
   CardContent,
@@ -47,6 +48,8 @@ import {
   ChartTooltipContent,
 } from '../ui/chart'
 import { Skeleton } from '../ui/skeleton'
+import { AddAccountDialog } from './add-account-dialog'
+import { AddTransactionDialog } from './add-transaction-dialog'
 
 const CATEGORY_COLORS = [
   'var(--chart-1)',
@@ -482,12 +485,21 @@ export function Overview() {
           </div>
           <div>
             {accounts.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <span className="mb-2 text-4xl">🏦</span>
-                <p className="text-muted-foreground">
-                  {t('overview.noAccounts')}
-                </p>
-              </div>
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-8 text-center">
+                  <span className="mb-2 text-4xl">🏦</span>
+                  <p className="text-muted-foreground">
+                    {t('overview.noAccounts')}
+                  </p>
+                  <AddAccountDialog
+                    trigger={
+                      <Button className="mt-4" size="sm">
+                        {t('overview.createAccountCta')}
+                      </Button>
+                    }
+                  />
+                </CardContent>
+              </Card>
             ) : (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {[...accounts]
@@ -596,61 +608,62 @@ export function Overview() {
           </div>
         </section>
 
-        <Link href="?budget" className="block">
-          <Card className="hover:shadow-lift transition-shadow">
-            <CardHeader>
-              <CardTitle>{t('overview.budgetProgress')}</CardTitle>
-              <CardDescription>
-                {t('overview.budgetProgressDesc')}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {budgetedItems.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <span className="mb-2 text-4xl">🎯</span>
-                  <p className="text-muted-foreground">
-                    {t('overview.noBudgetYet')}
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div>
-                    <div className="mb-1 flex items-center justify-between text-sm">
-                      <span className="font-medium">
-                        ${formatMoney(totalBudgetSpent, currency)} / $
-                        {formatMoney(totalBudgeted, currency)}
-                      </span>
-                      <span className="text-muted-foreground">
-                        {Math.round(budgetPercent)}%
-                      </span>
-                    </div>
-                    <div className="bg-muted h-2 w-full overflow-hidden rounded-full">
-                      <div
-                        className={`h-full rounded-full ${
-                          totalBudgetSpent > totalBudgeted
-                            ? 'bg-red-500'
-                            : budgetPercent >= 80
-                              ? 'bg-yellow-500'
-                              : 'bg-primary'
-                        }`}
-                        style={{ width: `${budgetPercent}%` }}
-                      />
-                    </div>
+        <Card className="hover:shadow-lift transition-shadow">
+          <CardHeader>
+            <CardTitle>{t('overview.budgetProgress')}</CardTitle>
+            <CardDescription>
+              {t('overview.budgetProgressDesc')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {budgetedItems.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <span className="mb-2 text-4xl">🎯</span>
+                <p className="text-muted-foreground">
+                  {t('overview.noBudgetYet')}
+                </p>
+                <Button asChild className="mt-4" size="sm">
+                  <Link href="?budget">{t('overview.setupBudgetCta')}</Link>
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div>
+                  <div className="mb-1 flex items-center justify-between text-sm">
+                    <span className="font-medium">
+                      ${formatMoney(totalBudgetSpent, currency)} / $
+                      {formatMoney(totalBudgeted, currency)}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {Math.round(budgetPercent)}%
+                    </span>
                   </div>
-                  {overBudgetCategories.length > 0 && (
-                    <p className="text-xs text-red-600">
-                      {t('overview.overBudgetIn', {
-                        categories: overBudgetCategories
-                          .map((c) => c.categoryName)
-                          .join(', '),
-                      })}
-                    </p>
-                  )}
+                  <div className="bg-muted h-2 w-full overflow-hidden rounded-full">
+                    <div
+                      className={`h-full rounded-full ${
+                        totalBudgetSpent > totalBudgeted
+                          ? 'bg-red-500'
+                          : budgetPercent >= 80
+                            ? 'bg-yellow-500'
+                            : 'bg-primary'
+                      }`}
+                      style={{ width: `${budgetPercent}%` }}
+                    />
+                  </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </Link>
+                {overBudgetCategories.length > 0 && (
+                  <p className="text-xs text-red-600">
+                    {t('overview.overBudgetIn', {
+                      categories: overBudgetCategories
+                        .map((c) => c.categoryName)
+                        .join(', '),
+                    })}
+                  </p>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
@@ -664,6 +677,9 @@ export function Overview() {
                 <p className="text-muted-foreground">
                   {t('overview.noBudgetYet')}
                 </p>
+                <Button asChild className="mt-4" size="sm">
+                  <Link href="?budget">{t('overview.setupBudgetCta')}</Link>
+                </Button>
               </div>
             ) : (
               <ChartContainer
@@ -743,6 +759,13 @@ export function Overview() {
                 <p className="text-muted-foreground">
                   {t('overview.noExpensesThisMonth')}
                 </p>
+                <AddTransactionDialog
+                  trigger={
+                    <Button className="mt-4" size="sm">
+                      {t('overview.addExpenseCta')}
+                    </Button>
+                  }
+                />
               </div>
             ) : (
               <div className="flex flex-col items-center gap-6 sm:flex-row">
@@ -817,6 +840,13 @@ export function Overview() {
                 <p className="text-muted-foreground">
                   {t('overview.noActivity')}
                 </p>
+                <AddTransactionDialog
+                  trigger={
+                    <Button className="mt-4" size="sm">
+                      {t('overview.addTransactionCta')}
+                    </Button>
+                  }
+                />
               </div>
             ) : (
               <div className="space-y-4">
