@@ -2,7 +2,6 @@
 
 import { useLanguage } from '@/components/language-provider'
 import { Reveal } from '@/components/marketing/reveal'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Footer } from '@/components/ui/footer'
 import { Header } from '@/components/ui/header'
