@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "Lesfin",
+    "slug": "lesfin",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "scheme": "lesfin",
+    "plugins": ["expo-router"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.lesfin.mobile"
+    },
+    "android": {
+      "package": "app.lesfin.mobile"
+    },
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

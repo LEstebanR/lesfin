@@ -2,6 +2,9 @@
   "name": "personal-finances",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "prisma migrate deploy && next build",
