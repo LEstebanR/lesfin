@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Create GitHub Issue'
+  short_description: 'Draft implementation-ready GitHub issues'
+  default_prompt: 'Create a GitHub issue from this request using repository evidence, concrete scope, testable acceptance criteria, technical notes, labels, priority, and an approval checkpoint before creation.'

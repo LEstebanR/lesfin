@@ -1,35 +1,84 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Lesfin
 
-## Getting Started
+Aplicación de finanzas personales con una aplicación web en Next.js y una aplicación mobile en Expo / React Native.
 
-This project uses [Bun](https://bun.sh) as its package manager and runtime — install dependencies with `bun install`, not `npm`/`yarn`/`pnpm`.
+## Requisitos
 
-First, run the development server:
+- [Bun](https://bun.sh/)
+- Node.js compatible con las versiones usadas por Expo y Next.js
+- Para mobile: [Expo Go](https://expo.dev/go) o un emulador de Android / simulador de iOS
+- Para compilar iOS localmente: macOS y Xcode
+- Para compilar Android localmente: Android Studio y un Android SDK configurado
+
+## Instalación
+
+Instala todas las dependencias desde la raíz del repositorio:
+
+```bash
+bun install
+```
+
+El repositorio usa Bun como único gestor de paquetes. No uses `npm`, `yarn` ni `pnpm`.
+
+## Aplicación web
+
+Arranca el servidor de desarrollo desde la raíz:
 
 ```bash
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Comandos útiles:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+bun run lint
+bun run build
+bun run start
+```
 
-## Learn More
+La aplicación web vive en la raíz del repositorio. Usa Next.js, React, Prisma, Neon y Better Auth.
 
-To learn more about Next.js, take a look at the following resources:
+## Aplicación mobile
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+La aplicación mobile está en `apps/mobile` y usa Expo Router.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Desde la raíz del repositorio, inicia Expo con:
 
-## Polar billing
+```bash
+bun --cwd apps/mobile start
+```
 
-Configure one recurring Pro product in Polar Sandbox for local development and another in Polar Production for the deployed app. Use the matching product ID and access token in each environment.
+También puedes entrar al workspace y ejecutar los comandos directamente:
 
-Local `.env`:
+```bash
+cd apps/mobile
+bun start
+```
+
+Comandos específicos:
+
+```bash
+bun --cwd apps/mobile android  # Emulador o dispositivo Android
+bun --cwd apps/mobile ios      # Simulador o dispositivo iOS
+bun --cwd apps/mobile web      # Expo Web
+bun --cwd apps/mobile typecheck
+```
+
+Al iniciar Expo aparecerá un código QR. Puedes abrirlo con Expo Go en un dispositivo conectado a la misma red. También puedes usar las teclas interactivas que muestra Expo para abrir Android, iOS o la versión web.
+
+El código mobile principal está en `apps/mobile/app`. Actualmente algunas vistas todavía utilizan datos mockeados.
+
+## Variables de entorno
+
+La aplicación web necesita las variables de entorno definidas para Prisma, Better Auth, Google OAuth y, cuando se pruebe billing, Polar. Consulta la configuración del entorno antes de iniciar funcionalidades que dependan de estos servicios.
+
+### Polar billing
+
+Configura un producto Pro recurrente en Polar Sandbox para desarrollo local y otro en Polar Production. Usa las variables correspondientes en cada entorno.
+
+`.env` local:
 
 ```text
 POLAR_ACCESS_TOKEN=polar_sandbox_oat_...
@@ -37,18 +86,30 @@ POLAR_PRO_PRODUCT_ID=<sandbox-product-id>
 POLAR_WEBHOOK_SECRET=<sandbox-webhook-secret>
 ```
 
-Vercel Production:
+Para probar webhooks localmente:
 
-```text
-POLAR_ACCESS_TOKEN=polar_oat_...
-POLAR_PRO_PRODUCT_ID=<production-product-id>
-POLAR_WEBHOOK_SECRET=<production-webhook-secret>
+```bash
+polar listen http://localhost:3000
 ```
 
-For local webhooks, run `polar listen http://localhost:3000` and use the generated Sandbox secret; Polar will forward events to `/api/webhooks/polar`. For production, register `https://lesfin.app/api/webhooks/polar` in Polar Production. Subscribe the endpoint to the subscription lifecycle events handled by the route and use the raw delivery format. Local code always selects Sandbox; only a production build selects Production. The migration is applied by the normal `bun run build` command.
+El webhook se recibe en `/api/webhooks/polar`.
 
-## Deploy on Vercel
+## Estructura principal
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```text
+app/          Aplicación web Next.js y Server Actions
+components/   Componentes de la aplicación web
+lib/          Prisma, autenticación, consultas y utilidades compartidas
+prisma/       Esquema y migraciones de base de datos
+apps/mobile/  Aplicación Expo / React Native
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Deploy web en Vercel
+
+La aplicación web se despliega en [Vercel](https://vercel.com/) con el directorio raíz del repositorio (`.`) y el comando de build:
+
+```bash
+bun run build
+```
+
+La aplicación mobile no forma parte del build de Next.js.

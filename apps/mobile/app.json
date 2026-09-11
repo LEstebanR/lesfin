@@ -6,7 +6,10 @@
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "scheme": "lesfin",
-    "plugins": ["expo-router"],
+    "plugins": [
+      "expo-router",
+      "expo-status-bar"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.lesfin.mobile"

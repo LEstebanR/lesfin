@@ -1,4 +1,4 @@
 interface:
-  display_name: "Exportar vault semanal"
-  short_description: "Exporta documentos Markdown del vault cada semana."
-  default_prompt: "Usa $exportar-vault-semanal para preparar los documentos semanales del vault para el proyecto."
+  display_name: 'Exportar vault semanal'
+  short_description: 'Exporta documentos Markdown del vault cada semana.'
+  default_prompt: 'Usa $exportar-vault-semanal para preparar los documentos semanales del vault para el proyecto.'
