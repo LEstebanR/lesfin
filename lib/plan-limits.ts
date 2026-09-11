@@ -1,3 +1,4 @@
+import { resolveEntitlementPlan } from '@/lib/billing-entitlements'
 import { FREE_LIMITS } from '@/lib/plan-limits-shared'
 import { prisma } from '@/lib/prisma'
 import type { Plan } from '@prisma/client'
@@ -12,9 +13,14 @@ export {
 export async function getUserPlan(userId: string): Promise<Plan> {
   const user = await prisma.user.findUniqueOrThrow({
     where: { id: userId },
-    select: { plan: true, role: true },
+    select: {
+      role: true,
+      billingSubscription: {
+        select: { status: true, endsAt: true },
+      },
+    },
   })
-  return user.role === 'ADMIN' ? 'PRO' : user.plan
+  return resolveEntitlementPlan(user.role, user.billingSubscription)
 }
 
 // Locks the lowest-value items beyond the plan's limit and unlocks

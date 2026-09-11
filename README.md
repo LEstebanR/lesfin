@@ -94,6 +94,16 @@ polar listen http://localhost:3000
 
 El webhook se recibe en `/api/webhooks/polar`.
 
+### Política de acceso Pro
+
+El acceso Pro se deriva de la suscripción de Polar, no de un valor enviado por el cliente:
+
+- `active` y `trialing`: acceso Pro.
+- `past_due`: acceso Pro mientras Polar mantenga ese estado, para permitir recuperar el pago.
+- `canceled`: acceso Pro hasta `endsAt`; después se aplica Free.
+- `revoked`, `unpaid` u otros estados terminales: plan Free.
+- Los administradores conservan acceso Pro operativo sin necesitar una suscripción facturable.
+
 ## Estructura principal
 
 ```text

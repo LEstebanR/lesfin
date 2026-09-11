@@ -11,6 +11,7 @@
     "start": "next start",
     "lint": "next lint",
     "format": "prettier --write .",
+    "test": "bun test",
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",

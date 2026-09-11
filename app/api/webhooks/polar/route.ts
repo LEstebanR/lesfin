@@ -1,15 +1,9 @@
+import { hasProAccess } from '@/lib/billing-entitlements'
 import { prisma } from '@/lib/prisma'
 import { WebhookVerificationError, validateEvent } from '@polar-sh/sdk/webhooks'
 import { NextResponse } from 'next/server'
 
 export const runtime = 'nodejs'
-
-function hasProAccess(status: string, endsAt: Date | null) {
-  return (
-    ['active', 'trialing', 'past_due'].includes(status) ||
-    (status === 'canceled' && !!endsAt && endsAt > new Date())
-  )
-}
 
 export async function POST(request: Request) {
   const secret = process.env.POLAR_WEBHOOK_SECRET
@@ -59,6 +53,15 @@ export async function POST(request: Request) {
     (subscription) =>
       subscription.productId === process.env.POLAR_PRO_PRODUCT_ID
   )
+  if (isCustomerStateEvent && !stateSubscription) {
+    if (rawData.externalId) {
+      await prisma.user.update({
+        where: { id: rawData.externalId },
+        data: { plan: 'FREE' },
+      })
+    }
+    return NextResponse.json({ ok: true })
+  }
   const data = (
     isCustomerStateEvent
       ? stateSubscription && {
@@ -90,7 +93,8 @@ export async function POST(request: Request) {
 
   const endsAt = data.endsAt ?? null
   const pro =
-    event.type !== 'subscription.revoked' && hasProAccess(data.status, endsAt)
+    event.type !== 'subscription.revoked' &&
+    hasProAccess({ status: data.status, endsAt })
 
   await prisma.$transaction([
     prisma.billingSubscription.upsert({
