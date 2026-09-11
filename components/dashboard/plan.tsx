@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  cancelProSubscription,
   createProCheckout,
   openBillingPortal,
 } from '@/app/dashboard/plan/billing-actions'
@@ -16,17 +17,32 @@ import {
 } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { FREE_LIMITS } from '@/lib/plan-limits-shared'
-import { usePlanUsage } from '@/lib/queries'
+import { queryKeys, usePlanUsage } from '@/lib/queries'
+import { useQueryClient } from '@tanstack/react-query'
 import { Check } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '../ui/alert-dialog'
+
 const PRO_MONTHLY_PRICE = '$2.99'
 
 export function Plan() {
-  const { t } = useLanguage()
+  const { language, t } = useLanguage()
   const { data, isLoading } = usePlanUsage()
+  const queryClient = useQueryClient()
   const [isRedirecting, setIsRedirecting] = useState(false)
+  const [isCancelling, setIsCancelling] = useState(false)
 
   async function goToCheckout() {
     setIsRedirecting(true)
@@ -52,6 +68,20 @@ export function Plan() {
     }
   }
 
+  async function cancelPlan() {
+    setIsCancelling(true)
+    try {
+      await cancelProSubscription()
+      await queryClient.invalidateQueries({ queryKey: queryKeys.planUsage })
+      toast.success(t('plan.cancelSuccess'))
+    } catch (error) {
+      console.error(error)
+      toast.error(t('plan.cancelError'))
+    } finally {
+      setIsCancelling(false)
+    }
+  }
+
   if (isLoading || !data) {
     return (
       <div className="flex w-full flex-col gap-4 rounded-md p-4 md:mt-4 md:w-11/12 md:p-8">
@@ -62,6 +92,13 @@ export function Plan() {
   }
 
   const isPro = data.plan === 'PRO'
+  const cancellationDate =
+    data.billing?.endsAt ?? data.billing?.currentPeriodEnd
+  const formattedCancellationDate = cancellationDate
+    ? new Intl.DateTimeFormat(language === 'es' ? 'es-CO' : 'en-US', {
+        dateStyle: 'long',
+      }).format(new Date(cancellationDate))
+    : null
 
   const usageItems = [
     {
@@ -114,15 +151,60 @@ export function Plan() {
             <CardDescription>{t('plan.unlimitedDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button
-              onClick={goToPortal}
-              disabled={isRedirecting}
-              variant="outline"
-            >
-              {isRedirecting
-                ? t('plan.openingBilling')
-                : t('plan.manageBilling')}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                onClick={goToPortal}
+                disabled={isRedirecting || isCancelling}
+                variant="outline"
+              >
+                {isRedirecting
+                  ? t('plan.openingBilling')
+                  : t('plan.manageBilling')}
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    disabled={
+                      isRedirecting ||
+                      isCancelling ||
+                      data.billing?.cancelAtPeriodEnd === true
+                    }
+                    variant="ghost"
+                  >
+                    {data.billing?.cancelAtPeriodEnd
+                      ? t('plan.cancellationPending')
+                      : t('plan.cancelPlan')}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      {t('plan.cancelConfirmTitle')}
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {t('plan.cancelConfirmDescription')}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>
+                      {t('plan.cancelKeep')}
+                    </AlertDialogCancel>
+                    <AlertDialogAction onClick={cancelPlan}>
+                      {isCancelling
+                        ? t('plan.cancellingPlan')
+                        : t('plan.cancelPlan')}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+            {data.billing?.cancelAtPeriodEnd && formattedCancellationDate && (
+              <p className="text-muted-foreground mt-3 text-sm">
+                {t('plan.cancellationPendingDescription', {
+                  date: formattedCancellationDate,
+                })}
+              </p>
+            )}
           </CardContent>
         </Card>
       ) : (

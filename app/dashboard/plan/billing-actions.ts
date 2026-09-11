@@ -46,3 +46,48 @@ export async function openBillingPortal() {
   })
   return { url: portal.customerPortalUrl }
 }
+
+export async function cancelProSubscription() {
+  const session = await getServerSession()
+  if (!session) throw new Error('Not authenticated')
+
+  const billing = await prisma.billingSubscription.findUnique({
+    where: { userId: session.user.id },
+    select: {
+      polarCustomerId: true,
+      polarSubscriptionId: true,
+      cancelAtPeriodEnd: true,
+    },
+  })
+  if (!billing?.polarCustomerId || !billing.polarSubscriptionId) {
+    throw new Error('No active Polar subscription found')
+  }
+  if (billing.cancelAtPeriodEnd) {
+    return { cancelAtPeriodEnd: true }
+  }
+
+  const customerSession = await getPolarClient().customerSessions.create({
+    customerId: billing.polarCustomerId,
+    returnUrl: `${getAppUrl()}/dashboard?plan`,
+  })
+  const subscription =
+    await getPolarClient().customerPortal.subscriptions.cancel(
+      { customerSession: customerSession.token },
+      { id: billing.polarSubscriptionId }
+    )
+
+  await prisma.billingSubscription.update({
+    where: { userId: session.user.id },
+    data: {
+      status: subscription.status,
+      currentPeriodEnd: subscription.currentPeriodEnd,
+      endsAt: subscription.endsAt,
+      cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+    },
+  })
+
+  return {
+    cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+    endsAt: subscription.endsAt,
+  }
+}

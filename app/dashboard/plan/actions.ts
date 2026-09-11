@@ -23,5 +23,21 @@ export async function getPlanUsage() {
       }),
     ])
 
-  return { plan, accounts, debts, subscriptions, transactionsThisMonth }
+  const billing = await prisma.billingSubscription.findUnique({
+    where: { userId },
+    select: {
+      cancelAtPeriodEnd: true,
+      currentPeriodEnd: true,
+      endsAt: true,
+    },
+  })
+
+  return {
+    plan,
+    accounts,
+    debts,
+    subscriptions,
+    transactionsThisMonth,
+    billing,
+  }
 }
