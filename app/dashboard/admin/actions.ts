@@ -1,8 +1,8 @@
 'use server'
 
 import { requireAdmin } from '@/lib/admin'
+import { resolveEntitlementPlan } from '@/lib/billing-entitlements'
 import { prisma } from '@/lib/prisma'
-import type { Plan } from '@prisma/client'
 
 const PAGE_SIZE = 20
 
@@ -11,10 +11,27 @@ export async function getAdminStats() {
 
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
 
+  const now = new Date()
   const [totalUsers, proUsers, newUsers30d, totalAccounts, totalTransactions] =
     await Promise.all([
       prisma.user.count(),
-      prisma.user.count({ where: { plan: 'PRO' } }),
+      prisma.user.count({
+        where: {
+          OR: [
+            { role: 'ADMIN' },
+            {
+              billingSubscription: {
+                is: {
+                  OR: [
+                    { status: { in: ['active', 'trialing', 'past_due'] } },
+                    { status: 'canceled', endsAt: { gt: now } },
+                  ],
+                },
+              },
+            },
+          ],
+        },
+      }),
       prisma.user.count({ where: { createdAt: { gte: thirtyDaysAgo } } }),
       prisma.account.count(),
       prisma.transaction.count(),
@@ -52,30 +69,26 @@ export async function getAdminUsers(page: number, search: string) {
         id: true,
         name: true,
         email: true,
-        plan: true,
         role: true,
         createdAt: true,
         _count: { select: { accounts: true } },
+        billingSubscription: {
+          select: { status: true, endsAt: true },
+        },
       },
     }),
     prisma.user.count({ where }),
   ])
 
   return {
-    users,
+    users: users.map(({ billingSubscription, ...user }) => ({
+      ...user,
+      plan: resolveEntitlementPlan(user.role, billingSubscription),
+    })),
     total,
     page,
     totalPages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
   }
-}
-
-export async function setUserPlanAdmin(userId: string, plan: Plan) {
-  await requireAdmin()
-
-  await prisma.user.update({
-    where: { id: userId },
-    data: { plan },
-  })
 }
 
 export async function getAdminFeedback() {

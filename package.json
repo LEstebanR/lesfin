@@ -10,6 +10,7 @@
     "build": "prisma migrate deploy && next build",
     "start": "next start",
     "lint": "next lint",
+    "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "test": "bun test",
     "postinstall": "prisma generate",

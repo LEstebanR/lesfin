@@ -1,10 +1,8 @@
 'use client'
 
-import { setUserPlanAdmin } from '@/app/dashboard/admin/actions'
 import { useLanguage } from '@/components/language-provider'
 import { Loader } from '@/components/ui/loader'
 import { useAdminFeedback, useAdminStats, useAdminUsers } from '@/lib/queries'
-import { useQueryClient } from '@tanstack/react-query'
 import {
   ChevronLeft,
   ChevronRight,
@@ -15,7 +13,6 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import { Cell, Pie, PieChart } from 'recharts'
-import { toast } from 'sonner'
 
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
@@ -33,7 +30,6 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
   TableHeader,
   TableRow,
 } from '../ui/table'
@@ -153,28 +149,13 @@ function MetricsTab() {
 
 function UsersTab() {
   const { t } = useLanguage()
-  const queryClient = useQueryClient()
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const { data, isLoading } = useAdminUsers(page, search)
-  const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [sort, setSort] = useState<
     'name' | 'email' | 'plan' | 'role' | 'accounts'
   >('name')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
-
-  const handleTogglePlan = async (userId: string, currentPlan: string) => {
-    setUpdatingId(userId)
-    try {
-      await setUserPlanAdmin(userId, currentPlan === 'PRO' ? 'FREE' : 'PRO')
-      await queryClient.invalidateQueries({ queryKey: ['admin-users'] })
-      toast.success(t('admin.planUpdated'))
-    } catch (error) {
-      console.error('Error updating plan:', error)
-      toast.error(t('admin.planUpdateFailed'))
-    }
-    setUpdatingId(null)
-  }
 
   const sortedUsers = data?.users
     ? [...data.users].sort((a, b) => {
@@ -252,9 +233,6 @@ function UsersTab() {
                   >
                     {t('admin.accounts')}
                   </SortableTableHead>
-                  <TableHead className="text-right">
-                    {t('admin.actions')}
-                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -275,18 +253,6 @@ function UsersTab() {
                       <Badge variant="outline">{user.role}</Badge>
                     </TableCell>
                     <TableCell>{user._count.accounts}</TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={updatingId === user.id}
-                        onClick={() => handleTogglePlan(user.id, user.plan)}
-                      >
-                        {user.plan === 'PRO'
-                          ? t('admin.moveToFree')
-                          : t('admin.moveToPro')}
-                      </Button>
-                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

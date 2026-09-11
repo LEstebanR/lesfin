@@ -1,10 +1,16 @@
 'use server'
 
+import {
+  billingLog,
+  createCorrelationId,
+  safeErrorName,
+} from '@/lib/billing-observability'
 import { getAppUrl, getPolarClient } from '@/lib/polar'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from '@/lib/session'
 
 export async function createProCheckout() {
+  const correlationId = createCorrelationId()
   const session = await getServerSession()
   if (!session) throw new Error('Not authenticated')
 
@@ -17,20 +23,36 @@ export async function createProCheckout() {
   })
   if (!user) throw new Error('User not found')
 
-  const checkout = await getPolarClient().checkouts.create({
-    products: [productId],
-    externalCustomerId: user.id,
-    customerName: user.name,
-    customerEmail: user.email,
-    metadata: { userId: user.id },
-    successUrl: `${getAppUrl()}/dashboard?plan=success&checkout_id={CHECKOUT_ID}`,
-    returnUrl: `${getAppUrl()}/dashboard?plan`,
-  })
+  try {
+    const checkout = await getPolarClient().checkouts.create({
+      products: [productId],
+      externalCustomerId: user.id,
+      customerName: user.name,
+      customerEmail: user.email,
+      metadata: { userId: user.id },
+      successUrl: `${getAppUrl()}/dashboard?plan=success&checkout_id={CHECKOUT_ID}`,
+      returnUrl: `${getAppUrl()}/dashboard?plan`,
+    })
 
-  return { url: checkout.url }
+    billingLog('info', 'checkout.created', {
+      correlationId,
+      userId: user.id,
+      provider: 'polar',
+    })
+    return { url: checkout.url }
+  } catch (error) {
+    billingLog('error', 'checkout.failed', {
+      correlationId,
+      userId: user.id,
+      provider: 'polar',
+      errorName: safeErrorName(error),
+    })
+    throw error
+  }
 }
 
 export async function openBillingPortal() {
+  const correlationId = createCorrelationId()
   const session = await getServerSession()
   if (!session) throw new Error('Not authenticated')
 
@@ -40,11 +62,26 @@ export async function openBillingPortal() {
   })
   if (!billing?.polarCustomerId) throw new Error('No Polar customer found')
 
-  const portal = await getPolarClient().customerSessions.create({
-    customerId: billing.polarCustomerId,
-    returnUrl: `${getAppUrl()}/dashboard?plan`,
-  })
-  return { url: portal.customerPortalUrl }
+  try {
+    const portal = await getPolarClient().customerSessions.create({
+      customerId: billing.polarCustomerId,
+      returnUrl: `${getAppUrl()}/dashboard?plan`,
+    })
+    billingLog('info', 'portal.created', {
+      correlationId,
+      userId: session.user.id,
+      provider: 'polar',
+    })
+    return { url: portal.customerPortalUrl }
+  } catch (error) {
+    billingLog('error', 'portal.failed', {
+      correlationId,
+      userId: session.user.id,
+      provider: 'polar',
+      errorName: safeErrorName(error),
+    })
+    throw error
+  }
 }
 
 export async function cancelProSubscription() {

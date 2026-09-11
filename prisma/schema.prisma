@@ -251,6 +251,23 @@ model BillingSubscription {
   @@index([status])
 }
 
+// Stores only safe processing metadata for verified Polar webhooks. The raw
+// payload is intentionally not persisted because it may contain provider data
+// that is unnecessary for reconciliation.
+model BillingWebhookEvent {
+  id            String    @id @default(uuid())
+  eventId       String    @unique
+  eventType     String
+  status        String
+  correlationId String
+  processedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([eventType])
+  @@index([status])
+}
+
 model McpApiKey {
   id         String    @id @default(uuid())
   userId     String
