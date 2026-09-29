@@ -29,7 +29,7 @@ export function Footer({ showBlog = false }: { showBlog?: boolean }) {
           <span className="text-muted-foreground">{t('footer.madeWith')}</span>
           <Heart className="h-4 w-4 text-red-500" />
           <span className="text-muted-foreground">{t('footer.by')}</span>
-          <Link href="https://github.com/LEstebanR/lesteban">LEstebanR</Link>
+          <Link href="https://lesteban.dev">LEstebanR</Link>
         </div>
       </div>
     </footer>
