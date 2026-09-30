@@ -18,6 +18,8 @@ const trustedOrigins = [
   'https://personal-finances-chi.vercel.app',
   'https://personal-finances-lestebanrs-projects.vercel.app',
   'https://personal-finances-git-main-lestebanrs-projects.vercel.app',
+  'lesfin://',
+  'exp://localhost:8081',
 ]
 
 export const auth = betterAuth({
