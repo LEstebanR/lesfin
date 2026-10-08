@@ -1,4 +1,5 @@
 import { PricingPage } from '@/components/marketing/pricing-page'
+import { socialImage } from '@/lib/site'
 import type { Metadata } from 'next'
 
 const title = 'Pricing — Free and Pro plans'
@@ -14,11 +15,13 @@ export const metadata: Metadata = {
     description,
     url: '/pricing',
     type: 'website',
+    images: [socialImage],
   },
   twitter: {
     card: 'summary_large_image',
     title: `${title} · LESFin`,
     description,
+    images: [socialImage.url],
   },
 }
 
