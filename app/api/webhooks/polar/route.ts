@@ -163,8 +163,10 @@ export async function POST(request: Request) {
       correlationId,
       handler: async (tx) => {
         if (isCustomerStateEvent && !stateSubscription) {
+          // The Polar organization is shared with other apps, so the customer
+          // may not be a lesfin user; updateMany makes that a no-op.
           if (rawData.externalId) {
-            await tx.user.update({
+            await tx.user.updateMany({
               where: { id: rawData.externalId },
               data: { plan: 'FREE' },
             })
