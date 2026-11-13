@@ -24,6 +24,8 @@ jobs:
         run: bun install --frozen-lockfile
       - name: Typecheck
         run: bun run typecheck
+      - name: Typecheck (mobile)
+        run: bun run --cwd apps/mobile typecheck
 
   lint:
     name: Lint

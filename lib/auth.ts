@@ -1,3 +1,4 @@
+import { expo } from '@better-auth/expo'
 import { betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
 
@@ -18,13 +19,15 @@ const trustedOrigins = [
   'https://personal-finances-chi.vercel.app',
   'https://personal-finances-lestebanrs-projects.vercel.app',
   'https://personal-finances-git-main-lestebanrs-projects.vercel.app',
+  // Mobile app deep-link scheme (apps/mobile). The expo() plugin adds exp://
+  // automatically in development for Expo Go.
   'lesfin://',
-  'exp://localhost:8081',
 ]
 
 export const auth = betterAuth({
   baseURL,
   trustedOrigins,
+  plugins: [expo()],
   database: prismaAdapter(prisma, {
     provider: 'postgresql',
   }),

@@ -1,26 +1,19 @@
-import * as SecureStore from 'expo-secure-store'
-import { useRouter, useSegments } from 'expo-router'
 import {
+  type ReactNode,
   createContext,
+  useCallback,
   useContext,
   useEffect,
+  useMemo,
+  useRef,
   useState,
-  type ReactNode,
 } from 'react'
 
-import { authClient } from './auth-client'
-
-const TOKEN_KEY = 'auth_session_token'
-
-type User = {
-  id: string
-  name: string
-  email: string
-  image?: string
-}
+import { type AuthUser, authClient } from './auth-client'
 
 type AuthContextType = {
-  user: User | null
+  user: AuthUser | null
+  /** True while the stored session is being restored/validated. */
   isLoading: boolean
   error: string | null
   signIn: () => Promise<void>
@@ -31,109 +24,65 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const { data: session, isPending } = authClient.useSession()
   const [error, setError] = useState<string | null>(null)
-  const router = useRouter()
-  const segments = useSegments()
+  const user = session?.user ?? null
 
-  const loadSession = async () => {
-    try {
-      const token = await SecureStore.getItemAsync(TOKEN_KEY)
-      if (token) {
-        const response = await authClient.getSession()
-        if (
-          response &&
-          'data' in response &&
-          response.data &&
-          'user' in response.data
-        ) {
-          setUser(response.data.user as User)
-        } else {
-          await SecureStore.deleteItemAsync(TOKEN_KEY)
-        }
-      }
-    } catch (err) {
-      console.error('Failed to load session:', err)
-      await SecureStore.deleteItemAsync(TOKEN_KEY)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
+  // Detect a session that disappears without an explicit sign-out (expired or
+  // revoked on the server) so the login screen can explain why.
+  const hadUser = useRef(false)
+  const signingOut = useRef(false)
   useEffect(() => {
-    loadSession()
+    if (isPending) return
+    if (user) {
+      hadUser.current = true
+    } else if (hadUser.current) {
+      hadUser.current = false
+      if (!signingOut.current) {
+        setError('Tu sesión expiró. Inicia sesión de nuevo.')
+      }
+      signingOut.current = false
+    }
+  }, [user, isPending])
+
+  const signIn = useCallback(async () => {
+    setError(null)
+    const result = await authClient.signIn.social({
+      provider: 'google',
+      callbackURL: '/',
+    })
+    if (result.error) {
+      const message =
+        result.error.message || 'No se pudo iniciar sesión con Google.'
+      setError(message)
+      throw new Error(message)
+    }
   }, [])
 
-  useEffect(() => {
-    const inAuthGroup = segments[0] === '(auth)'
-    const inAppGroup = segments[0] === '(app)'
-
-    if (isLoading) return
-
-    if (!user && inAppGroup) {
-      router.replace('/login')
-    } else if (user && inAuthGroup) {
-      router.replace('/(app)')
+  const signOut = useCallback(async () => {
+    signingOut.current = true
+    const result = await authClient.signOut()
+    if (result.error) {
+      signingOut.current = false
+      setError('No se pudo cerrar sesión. Intenta de nuevo.')
     }
-  }, [user, segments, isLoading])
+  }, [])
 
-  const signIn = async () => {
-    try {
-      setIsLoading(true)
-      setError(null)
+  const clearError = useCallback(() => setError(null), [])
 
-      const result = await authClient.signIn.social({
-        provider: 'google',
-        callbackURL: '/(app)',
-      })
-
-      if (result.error) {
-        throw new Error(result.error.message || 'Failed to sign in')
-      }
-
-      if (result.data && 'user' in result.data && result.data.user) {
-        setUser(result.data.user as User)
-        await SecureStore.setItemAsync(TOKEN_KEY, 'authenticated')
-      } else if (result.data && 'url' in result.data && result.data.url) {
-        throw new Error(
-          'OAuth redirect not supported in mobile. Please configure mobile OAuth.'
-        )
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to sign in'
-      setError(message)
-      console.error('Sign in error:', err)
-      throw err
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const signOut = async () => {
-    try {
-      setIsLoading(true)
-      await authClient.signOut()
-      await SecureStore.deleteItemAsync(TOKEN_KEY)
-      setUser(null)
-      router.replace('/login')
-    } catch (err) {
-      console.error('Sign out error:', err)
-      setError('Failed to sign out')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const clearError = () => setError(null)
-
-  return (
-    <AuthContext.Provider
-      value={{ user, isLoading, error, signIn, signOut, clearError }}
-    >
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({
+      user,
+      isLoading: isPending,
+      error,
+      signIn,
+      signOut,
+      clearError,
+    }),
+    [user, isPending, error, signIn, signOut, clearError]
   )
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {

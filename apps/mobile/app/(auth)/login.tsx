@@ -2,7 +2,6 @@ import { Ionicons } from '@expo/vector-icons'
 import { useState } from 'react'
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   StyleSheet,
   Text,
@@ -32,9 +31,8 @@ export default function LoginScreen() {
       setLoading(true)
       clearError()
       await signIn()
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to sign in'
-      Alert.alert('Error', message)
+    } catch {
+      // The error is already exposed through `error` and rendered below.
     } finally {
       setLoading(false)
     }

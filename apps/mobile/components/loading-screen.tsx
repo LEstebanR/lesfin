@@ -6,7 +6,7 @@ const C = {
   greenDark: '#8DBA24',
 }
 
-export default function LoadingScreen() {
+export function LoadingScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.logo}>lesfin</Text>

@@ -598,9 +598,7 @@ function More({ onLogout }: { onLogout: () => void }) {
           <View style={styles.menuIcon}>
             <Icon color={C.red} name="log-out-outline" size={18} />
           </View>
-          <Text style={[styles.menuText, { color: C.red }]}>
-            Cerrar sesión
-          </Text>
+          <Text style={[styles.menuText, { color: C.red }]}>Cerrar sesión</Text>
           <Icon color={C.muted} name="chevron-forward" size={18} />
         </Pressable>
       </View>
