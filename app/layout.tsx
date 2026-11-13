@@ -1,7 +1,9 @@
 import { LanguageProvider } from '@/components/language-provider'
+import { siteUrl } from '@/lib/site'
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
+import { headers } from 'next/headers'
 import { Toaster } from 'sonner'
 
 import './globals.css'
@@ -16,11 +18,6 @@ const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
   subsets: ['latin'],
 })
-
-// No production domain yet — override with NEXT_PUBLIC_SITE_URL once one
-// exists. Needed for metadataBase (resolves OG/Twitter image URLs and
-// canonical links) and reused by app/sitemap.ts and app/robots.ts.
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://lesfin.app'
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -68,13 +65,15 @@ export const viewport: Viewport = {
   interactiveWidget: 'resizes-content',
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const lang = (await headers()).get('x-html-lang') === 'es' ? 'es' : 'en'
+
   return (
-    <html lang="en">
+    <html lang={lang}>
       <body
         className={`${geistSans.variable} ${geistMono.variable} flex w-full flex-col antialiased`}
       >

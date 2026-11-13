@@ -3,10 +3,12 @@ import { Footer } from '@/components/ui/footer'
 import { Header } from '@/components/ui/header'
 import {
   type BlogLocale,
+  blogAlternates,
   getPost,
   getPostSlugs,
   getTranslationSlug,
 } from '@/lib/blog'
+import { socialImage } from '@/lib/site'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
@@ -24,6 +26,10 @@ export function generateStaticParams() {
   )
 }
 
+// Unknown locale/slug pairs are not generated, so they 404 at the router
+// instead of rendering an indexable empty page.
+export const dynamicParams = false
+
 export async function generateMetadata({
   params,
 }: {
@@ -35,21 +41,12 @@ export async function generateMetadata({
   const post = await getPost(locale, slug)
   if (!post) return {}
 
-  const translationSlug = getTranslationSlug(locale, post.id)
-  const otherLocale: BlogLocale = locale === 'en' ? 'es' : 'en'
-  const languages: Record<string, string> = {
-    [locale]: `/blog/${locale}/${slug}`,
-  }
-  if (translationSlug) {
-    languages[otherLocale] = `/blog/${otherLocale}/${translationSlug}`
-  }
-
   return {
     title: post.title,
     description: post.description,
     alternates: {
       canonical: `/blog/${locale}/${slug}`,
-      languages,
+      languages: blogAlternates(post),
     },
     openGraph: {
       title: post.title,
@@ -57,11 +54,13 @@ export async function generateMetadata({
       url: `/blog/${locale}/${slug}`,
       type: 'article',
       publishedTime: post.date,
+      images: [socialImage],
     },
     twitter: {
       card: 'summary_large_image',
       title: post.title,
       description: post.description,
+      images: [socialImage.url],
     },
   }
 }

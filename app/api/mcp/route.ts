@@ -40,6 +40,7 @@ import {
 import { verifyMcpToken } from '@/lib/mcp-auth'
 import { withToolHandler } from '@/lib/mcp-errors'
 import { withIdempotency } from '@/lib/mcp-idempotency'
+import { withoutListenStreams } from '@/lib/mcp-listen-guard'
 import { prisma } from '@/lib/prisma'
 import { getTodayInTimezone } from '@/lib/user-date'
 import type { ServerContext } from '@modelcontextprotocol/server'
@@ -845,9 +846,15 @@ const handler = createMcpHandler(
   { serverInfo: { name: 'personal-finances', version: '0.1.0' } }
 )
 
-const authHandler = withMcpAuth(handler, verifyMcpToken, {
-  required: true,
-  resourceMetadataPath: '/.well-known/oauth-protected-resource',
-})
+const authHandler = withoutListenStreams(
+  withMcpAuth(handler, verifyMcpToken, {
+    required: true,
+    resourceMetadataPath: '/.well-known/oauth-protected-resource',
+  })
+)
+
+// Backstop: every MCP exchange here is a short request/response. If anything
+// ever streams again, cap it well below Vercel's 300 s default.
+export const maxDuration = 60
 
 export { authHandler as GET, authHandler as POST }

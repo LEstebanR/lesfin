@@ -1,4 +1,5 @@
 import { LandingPage } from '@/components/marketing/landing-page'
+import { socialImage } from '@/lib/site'
 import type { Metadata } from 'next'
 
 const title =
@@ -15,11 +16,13 @@ export const metadata: Metadata = {
     description,
     url: '/',
     type: 'website',
+    images: [socialImage],
   },
   twitter: {
     card: 'summary_large_image',
     title,
     description,
+    images: [socialImage.url],
   },
 }
 

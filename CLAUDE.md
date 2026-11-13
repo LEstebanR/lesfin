@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Personal finance app (single-user, personal project — not launched, no real users yet). Tracked in Linear, project **Personal Finances**, team **Lesteban**.
+Personal finance app (single-user, personal project — not launched, no real users yet). Issues are tracked in GitHub Issues (`LEstebanR/lesfin`).
 
-**No gitflow.** Work happens directly on `main` — no release branches, no mandatory PRs, direct commits. This is a solo, pre-launch project; don't introduce branch/PR ceremony unless asked.
+`main` is protected on GitHub: changes go through a short-lived branch + PR, and the CI checks (Typecheck, Lint, Test) must pass before merging. No release branches.
 
 ## Commands
 
@@ -40,4 +40,5 @@ Supabase has been fully removed — there's no `utils/supabase/*`, no `@supabase
 - `components/dashboard/*` are client components that call Server Actions directly (no REST layer) — `app/dashboard/page.tsx` switches between them based on a `?<view>` search param rather than separate routes.
 - Import order and formatting are enforced by Prettier plugins (`@trivago/prettier-plugin-sort-imports`, `prettier-plugin-tailwindcss`) — run `bun run format` rather than hand-ordering imports.
 - Path alias: `@/*` maps to the repo root (`tsconfig.json`).
+- Billing uses Polar (organization **LESFin**, which only holds lesfin). The production webhook must point to `https://www.lesfin.app/api/webhooks/polar` — `lesfin.app` 308-redirects to `www` and Polar doesn't follow redirects. Webhook mapping lives in `lib/polar-webhook.ts` and resolves the user from `metadata.userId` before `customer.externalId`.
 - `middleware.ts` does a lightweight, Edge-safe cookie check (`getSessionCookie` from `better-auth/cookies`) to gate all routes except `/`, `/login`, `/signup` — it does not hit the database. Full session validation (`getServerSession()`) happens in `app/dashboard/layout.tsx` and in each Server Action.

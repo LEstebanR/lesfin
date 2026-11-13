@@ -1,7 +1,6 @@
 import { getAllPostsMeta } from '@/lib/blog'
+import { siteUrl } from '@/lib/site'
 import { NextResponse } from 'next/server'
-
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://lesfin.app'
 
 function escapeXml(value: string) {
   return value
