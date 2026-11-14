@@ -24,7 +24,7 @@ Solo el servidor puede leer estas variables:
 - `POLAR_ACCESS_TOKEN`
 - `POLAR_PRO_PRODUCT_ID`
 - `POLAR_WEBHOOK_SECRET`
-- `NEXT_PUBLIC_APP_URL` en producción, si la URL pública no es `https://lesfin.app`
+- `NEXT_PUBLIC_APP_URL` en producción, si la URL pública no es `https://www.lesfin.app` (si apunta al apex `lesfin.app`, `getAppUrl()` la normaliza a `www`)
 
 No deben aparecer en el cliente, en commits, en comentarios de issues ni en logs. En local se usa Polar Sandbox; producción debe usar el token, producto y secreto de Polar Production.
 

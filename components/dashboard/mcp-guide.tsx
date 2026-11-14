@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { queryKeys, useMcpApiKeys } from '@/lib/queries'
+import { siteUrl } from '@/lib/site'
 import { useQueryClient } from '@tanstack/react-query'
 import { Check, Copy, KeyRound, TriangleAlert } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -314,7 +315,7 @@ export function McpGuide() {
     setOrigin(window.location.origin)
   }, [])
 
-  const baseUrl = origin || 'https://lesfin.app'
+  const baseUrl = origin || siteUrl
   const serverUrl = `${baseUrl}/api/mcp`
   const discoveryUrl = `${baseUrl}/.well-known/oauth-authorization-server`
 
