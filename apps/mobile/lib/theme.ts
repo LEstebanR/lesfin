@@ -16,14 +16,9 @@ export const colors = {
   card: '#FFFFFF',
   primary: '#5BB661',
   primaryForeground: '#F8F8F8',
-  secondary: '#EEF2F7',
-  muted: '#F1F4F7',
   mutedForeground: '#545F6C',
-  accent: '#DEEDDE',
   destructive: '#E7000B',
   border: '#DADEE5',
-  chart1: '#BFB200',
-  chart2: '#00908A',
   chart3: '#1F68BC',
   chart4: '#EA6747',
   chart5: '#AD51A7',
@@ -33,7 +28,6 @@ export const colors = {
 export const radius = {
   md: 8,
   lg: 10,
-  xl: 14,
   '2xl': 16,
 } as const
 

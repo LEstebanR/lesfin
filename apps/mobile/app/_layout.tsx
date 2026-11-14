@@ -5,14 +5,18 @@ import { AuthProvider } from '../lib/auth-context'
 import { fontAssets } from '../lib/theme'
 
 export default function RootLayout() {
-  // Geist ships with the bundle, so this resolves almost immediately; render
-  // nothing until then to avoid a flash of the system font.
-  const [fontsLoaded, fontError] = useFonts(fontAssets)
-  if (!fontsLoaded && !fontError) return null
-
+  // AuthProvider sits outside the font gate so the session check starts in
+  // parallel with font loading.
   return (
     <AuthProvider>
-      <Slot />
+      <FontGate />
     </AuthProvider>
   )
+}
+
+function FontGate() {
+  // Render nothing until Geist loads, to avoid a flash of the system font.
+  const [fontsLoaded, fontError] = useFonts(fontAssets)
+  if (!fontsLoaded && !fontError) return null
+  return <Slot />
 }

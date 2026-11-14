@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native'
 
+import { Logo } from '../../components/logo'
 import { useAuth } from '../../lib/auth-context'
 import { colors, fonts } from '../../lib/theme'
 
@@ -48,8 +49,6 @@ const C = {
   muted: colors.mutedForeground,
   border: colors.border,
   green: colors.primary,
-  greenDark: colors.primary,
-  navy: colors.foreground,
   red: colors.destructive,
   blue: colors.chart3,
   purple: colors.chart5,
@@ -61,7 +60,7 @@ const initialAccounts: Account[] = [
     name: 'Efectivo',
     type: 'Cash',
     balance: 1250000,
-    color: C.greenDark,
+    color: C.green,
     icon: 'wallet-outline',
   },
   {
@@ -99,7 +98,7 @@ const initialTransactions: Transaction[] = [
     kind: 'income',
     date: 'Ayer, 08:00',
     icon: 'briefcase-outline',
-    color: C.greenDark,
+    color: C.green,
   },
   {
     id: '3',
@@ -147,7 +146,7 @@ function Header({
 }) {
   return (
     <View style={styles.header}>
-      <Text style={styles.logo}>lesfin</Text>
+      <Logo />
       <View style={styles.headerRight}>
         <Pressable style={styles.bell}>
           <Icon name="notifications-outline" size={20} />
@@ -278,7 +277,7 @@ function Home({
           icon="arrow-down"
           label="INGRESOS"
           value={money(income)}
-          color={C.greenDark}
+          color={C.green}
         />
         <Stat
           icon="arrow-up"
@@ -418,7 +417,7 @@ function Chip({
 }) {
   return (
     <View style={[styles.chip, active && styles.chipActive]}>
-      {icon && <Icon color={active ? C.navy : C.muted} name={icon} size={14} />}
+      {icon && <Icon color={active ? C.text : C.muted} name={icon} size={14} />}
       <Text style={[styles.chipText, active && styles.chipTextActive]}>
         {label}
       </Text>
@@ -471,7 +470,7 @@ function Budget() {
     { n: 'Alimentación', s: 620000, l: 900000, c: C.orange },
     { n: 'Transporte', s: 180000, l: 350000, c: C.blue },
     { n: 'Suscripciones', s: 145000, l: 220000, c: C.purple },
-    { n: 'Hogar', s: 410000, l: 700000, c: C.greenDark },
+    { n: 'Hogar', s: 410000, l: 700000, c: C.green },
   ]
   return (
     <ScrollView contentContainerStyle={styles.scroll}>
@@ -522,7 +521,7 @@ function Budget() {
         ))}
       </View>
       <View style={styles.tip}>
-        <Icon color={C.greenDark} name="bulb-outline" />
+        <Icon color={C.green} name="bulb-outline" />
         <Text style={styles.tipText}>
           <Text style={styles.tipTitle}>Vas por buen camino{`\n`}</Text>Tus
           gastos están por debajo de lo planeado este mes.
@@ -633,7 +632,7 @@ function AddModal({
       kind,
       date: 'Ahora',
       icon: kind === 'income' ? 'arrow-down-outline' : 'receipt-outline',
-      color: kind === 'income' ? C.greenDark : C.red,
+      color: kind === 'income' ? C.green : C.red,
     })
     setTitle('')
     setAmount('')
@@ -723,7 +722,7 @@ export default function MobileHome() {
     )
   }
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     Alert.alert(
       'Cerrar sesión',
       '¿Estás seguro de que quieres cerrar sesión?',
@@ -779,7 +778,7 @@ export default function MobileHome() {
         ).map(([key, label, icon]) => (
           <Pressable key={key} onPress={() => setTab(key)} style={styles.tab}>
             <Icon
-              color={tab === key ? C.greenDark : C.muted}
+              color={tab === key ? C.green : C.muted}
               name={icon}
               size={21}
             />
@@ -806,12 +805,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 22,
     paddingTop: Platform.OS === 'ios' ? 18 : 14,
   },
-  logo: {
-    color: C.text,
-    fontSize: 23,
-    fontFamily: fonts.bold,
-    letterSpacing: -1,
-  },
   headerRight: { alignItems: 'center', flexDirection: 'row', gap: 13 },
   headerTitle: {
     color: C.muted,
@@ -834,7 +827,7 @@ const styles = StyleSheet.create({
   },
   avatar: {
     alignItems: 'center',
-    backgroundColor: C.navy,
+    backgroundColor: C.text,
     borderRadius: 17,
     height: 34,
     justifyContent: 'center',
@@ -842,7 +835,7 @@ const styles = StyleSheet.create({
   },
   avatarLarge: {
     alignItems: 'center',
-    backgroundColor: C.navy,
+    backgroundColor: C.text,
     borderRadius: 22,
     height: 44,
     justifyContent: 'center',
@@ -868,8 +861,8 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     letterSpacing: -0.7,
   },
-  star: { color: C.greenDark, fontSize: 20 },
-  balanceCard: { backgroundColor: C.navy, borderRadius: 23, padding: 23 },
+  star: { color: C.green, fontSize: 20 },
+  balanceCard: { backgroundColor: C.text, borderRadius: 23, padding: 23 },
   rowBetween: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -932,7 +925,12 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   statValue: { color: C.text, fontSize: 17, fontFamily: fonts.bold },
-  meta: { color: C.muted, fontSize: 10, marginTop: 3 },
+  meta: {
+    color: C.muted,
+    fontFamily: fonts.regular,
+    fontSize: 10,
+    marginTop: 3,
+  },
   sectionTitle: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -941,7 +939,7 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   sectionHeading: { color: C.text, fontSize: 17, fontFamily: fonts.bold },
-  action: { color: C.greenDark, fontSize: 12, fontFamily: fonts.semibold },
+  action: { color: C.green, fontSize: 12, fontFamily: fonts.semibold },
   card: {
     backgroundColor: C.card,
     borderColor: C.border,
@@ -968,7 +966,7 @@ const styles = StyleSheet.create({
   transactionCopy: { flex: 1, marginLeft: 12 },
   transactionTitle: { color: C.text, fontSize: 13, fontFamily: fonts.semibold },
   transactionAmount: { color: C.red, fontSize: 12, fontFamily: fonts.bold },
-  income: { color: C.greenDark },
+  income: { color: C.green },
   horizontal: { gap: 11, paddingBottom: 8 },
   miniAccount: {
     backgroundColor: C.card,
@@ -1066,12 +1064,16 @@ const styles = StyleSheet.create({
     letterSpacing: 1.3,
   },
   total: {
-    color: C.navy,
+    color: C.text,
     fontSize: 32,
     fontFamily: fonts.bold,
     marginVertical: 12,
   },
-  totalMeta: { color: 'rgba(255,255,255,.6)', fontSize: 11 },
+  totalMeta: {
+    color: 'rgba(255,255,255,.6)',
+    fontFamily: fonts.regular,
+    fontSize: 11,
+  },
   segment: {
     backgroundColor: '#EEF0EB',
     borderRadius: 12,
@@ -1145,7 +1147,7 @@ const styles = StyleSheet.create({
   monthButtonText: { color: C.text, fontSize: 11, fontFamily: fonts.semibold },
   budgetHero: {
     alignItems: 'center',
-    backgroundColor: C.navy,
+    backgroundColor: C.text,
     borderRadius: 22,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1188,7 +1190,13 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 15,
   },
-  tipText: { color: C.muted, flex: 1, fontSize: 11, lineHeight: 17 },
+  tipText: {
+    color: C.muted,
+    flex: 1,
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    lineHeight: 17,
+  },
   tipTitle: { color: C.text, fontFamily: fonts.bold },
   profile: {
     alignItems: 'center',
@@ -1202,7 +1210,7 @@ const styles = StyleSheet.create({
   },
   profileAvatar: {
     alignItems: 'center',
-    backgroundColor: C.navy,
+    backgroundColor: C.text,
     borderRadius: 25,
     height: 50,
     justifyContent: 'center',
@@ -1259,7 +1267,7 @@ const styles = StyleSheet.create({
   },
   tab: { alignItems: 'center', gap: 3, minWidth: 58 },
   tabText: { color: C.muted, fontSize: 9, fontFamily: fonts.semibold },
-  tabActive: { color: C.greenDark },
+  tabActive: { color: C.green },
   overlay: {
     backgroundColor: 'rgba(29,37,48,.45)',
     flex: 1,

@@ -9,19 +9,13 @@ import { colors, fonts, radius, shadowSoft } from '../../lib/theme'
 // Same layout and copy as the web's app/login/page.tsx: logo on top, then a
 // card with the title, subtitle and the Google button.
 export default function LoginScreen() {
-  const { signIn, error, clearError } = useAuth()
+  const { signIn, error } = useAuth()
   const [loading, setLoading] = useState(false)
 
   const handleGoogleSignIn = async () => {
-    try {
-      setLoading(true)
-      clearError()
-      await signIn()
-    } catch {
-      // The error is already exposed through `error` and rendered below.
-    } finally {
-      setLoading(false)
-    }
+    setLoading(true)
+    await signIn()
+    setLoading(false)
   }
 
   return (

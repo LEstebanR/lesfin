@@ -1,115 +1,58 @@
 # Lesfin Mobile
 
-Mobile application for Lesfin personal finance manager built with Expo and React Native.
+Expo / React Native app for Lesfin.
 
-## Features
-
-- **Google Authentication**: Secure login using Better Auth with Google OAuth
-- **Persistent Sessions**: Sessions are stored securely using Expo Secure Store
-- **Protected Routes**: Automatic redirection based on authentication state
-- **Cross-platform**: Works on iOS and Android
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18+
-- Bun (package manager)
-- Expo CLI
-- iOS Simulator (Mac) or Android Emulator
-
-### Installation
+From the repository root:
 
 ```bash
-# Install dependencies from the root
 bun install
-
-# Navigate to mobile app
-cd apps/mobile
+bun dev                     # web app: serves the Better Auth API on :3000
+cd apps/mobile && bun start # Expo dev server
 ```
 
-### Environment Variables
+The web app intentionally remains at the repository root. Vercel should keep
+its Root Directory as `.` and its existing build command (`bun run build` or
+the configured equivalent). The mobile workspace is not included in that
+Next.js build.
 
-Create a `.env` file in `apps/mobile`:
+## Auth server URL
 
-```env
-# Optional: Override auth URL (defaults to http://localhost:3000 in dev,
-# https://www.lesfin.app in production builds)
-EXPO_PUBLIC_AUTH_URL=http://localhost:3000
-```
+The app talks to the web's Better Auth API at `EXPO_PUBLIC_AUTH_URL`
+(defaults to `http://localhost:3000` in dev and `https://www.lesfin.app` in
+production builds). Set it in `apps/mobile/.env` or inline, and restart Expo
+with `--clear` after changing it.
 
-`localhost` only works on the iOS simulator. On the Android emulator use
-`http://10.0.2.2:3000`, and on a physical device use your machine's LAN IP
-(e.g. `http://192.168.1.10:3000`).
+Google redirects to `BETTER_AUTH_URL/api/auth/callback/google` on the server,
+and it only accepts `localhost` or public domains as redirect URIs, so a LAN IP
+does not work:
 
-### Running the App
+- **iOS simulator:** `localhost` works as is.
+- **Android (emulator or USB device):** `adb reverse tcp:3000 tcp:3000` and
+  keep `localhost`.
+- **iPhone / physical device:** expose the web with a tunnel
+  (`cloudflared tunnel --url http://localhost:3000`), set both
+  `BETTER_AUTH_URL` (web) and `EXPO_PUBLIC_AUTH_URL` (mobile) to the tunnel
+  URL, and add `<tunnel>/api/auth/callback/google` as an authorized redirect
+  URI on the Google OAuth client. New redirect URIs can take a few minutes to
+  propagate, so `redirect_uri_mismatch` right after adding one is expected.
 
-```bash
-# Start the Expo development server
-bun start
+Expo Go returns to the app through `exp://`, which the server's `expo()` plugin
+only trusts in development, so Expo Go cannot sign in against production. A
+development or store build uses the `lesfin://` scheme instead.
 
-# Run on iOS simulator
-bun ios
+## Auth flow
 
-# Run on Android emulator
-bun android
-```
+1. `@better-auth/expo` opens Google in the system browser through the web's
+   `/api/auth`, and the callback deep-links back into the app.
+2. The session cookie is stored encrypted in SecureStore and attached to every
+   request, so the session survives restarts.
+3. The `(app)` and `(auth)` layouts redirect based on the session. If the
+   server drops the session without a sign-out, the login screen says it
+   expired.
+4. Sign-out clears the stored cookie and the cached session.
 
-### Development with Web Backend
+## Look and feel
 
-For authentication to work, you need to have the web app running:
-
-```bash
-# In the root directory
-bun dev
-```
-
-This starts the Next.js web app on `http://localhost:3000`, which provides the Better Auth API endpoints that the mobile app connects to.
-
-## Authentication Flow
-
-1. User opens the app; while the stored session is validated a loading screen is shown
-2. Without a session, the `(app)` layout redirects to `/login`
-3. User taps "Continuar con Google": `@better-auth/expo` opens the Google flow in the system browser (via the web app's `/api/auth`)
-4. Google redirects back to the web callback, which deep-links into the app (`lesfin://`); the session cookie is stored encrypted in SecureStore
-5. The `(auth)` layout sees the session and redirects to the main app
-6. On restart the cookie is read from SecureStore, so the user stays signed in
-7. If the server rejects the session (expired/revoked), the user is sent back to login with an explanatory message
-8. Logout calls `signOut()`, which clears the stored cookie and session cache
-
-## Project Structure
-
-```
-apps/mobile/
-├── app/
-│   ├── (auth)/           # Authentication screens
-│   │   ├── login.tsx     # Login screen
-│   │   └── _layout.tsx
-│   ├── (app)/            # Authenticated app screens
-│   │   ├── index.tsx     # Main app (home, transactions, etc.)
-│   │   └── _layout.tsx
-│   └── _layout.tsx       # Root layout with AuthProvider
-├── components/
-│   └── loading-screen.tsx
-├── lib/
-│   ├── auth-client.ts    # Better Auth client configuration
-│   └── auth-context.tsx  # Auth context provider
-├── app.json              # Expo configuration
-└── package.json
-```
-
-## Key Technologies
-
-- **Expo** - React Native framework
-- **Expo Router** - File-based routing
-- **Better Auth** - Authentication library
-- **Expo Secure Store** - Encrypted storage for tokens
-- **Expo Web Browser** - OAuth flow handling
-
-## Notes
-
-- The mobile app connects to the same Better Auth instance as the web app; the server registers the `expo()` plugin and trusts the `lesfin://` scheme (`exp://` is trusted automatically in development for Expo Go)
-- No extra Google OAuth client is needed: the redirect URI is still the web's `/api/auth/callback/google`
-- Google OAuth credentials must be configured in the web app's environment variables
-- Session tokens are stored encrypted on the device
-- Protected routes automatically redirect unauthenticated users to login
+`lib/theme.ts` mirrors the web's light tokens from `app/globals.css` (OKLCH
+converted to hex) and uses Geist, the web's font. Update it when the web
+palette changes.
