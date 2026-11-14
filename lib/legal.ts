@@ -6,9 +6,7 @@ import type { Language } from '@/lib/translations'
 export const LEGAL_INFO = {
   // Personal address for now; replace with a company one once it exists.
   contactEmail: 'lesteban.dev@gmail.com',
-  jurisdiction: '[PENDIENTE: país y ciudad de jurisdicción]',
-  refundPolicy: '[PENDIENTE: política de reembolsos]',
-  lastUpdated: '2026-11-12',
+  lastUpdated: '2026-11-14',
 }
 
 export const PENDING_MARKER = /(\[PENDIENTE:[^\]]*\])/
@@ -30,7 +28,7 @@ export type LegalDocument = {
 
 export type LegalDocumentKind = 'privacy' | 'terms'
 
-const { contactEmail, jurisdiction, refundPolicy } = LEGAL_INFO
+const { contactEmail } = LEGAL_INFO
 
 const privacyEn: LegalDocument = {
   title: 'Privacy Policy',
@@ -275,7 +273,7 @@ const termsEn: LegalDocument = {
       heading: 'Cancellation and refunds',
       blocks: [
         'You can cancel Pro at any time from the Plan section of the app or the billing portal. Pro stays active until the end of the period you already paid for, and then your account returns to the Free plan. Cancelling never deletes your data; items above the Free limits are kept but may become read-only.',
-        `Refunds: ${refundPolicy}.`,
+        'Payments are non-refundable, except where the law requires a refund.',
       ],
     },
     {
@@ -321,7 +319,7 @@ const termsEn: LegalDocument = {
     {
       heading: 'Governing law',
       blocks: [
-        `These terms are governed by the laws of ${jurisdiction}. Any dispute will be handled by the competent courts of ${jurisdiction}, without prejudice to any consumer rights that the law of your country of residence grants you.`,
+        'These terms are governed by the laws of Colombia. Any dispute will be handled by the competent courts of Medellín, Colombia, without prejudice to any consumer rights that the law of your country of residence grants you.',
       ],
     },
     {
@@ -370,7 +368,7 @@ const termsEs: LegalDocument = {
       heading: 'Cancelación y reembolsos',
       blocks: [
         'Puedes cancelar Pro en cualquier momento desde la sección Plan de la app o desde el portal de facturación. Pro sigue activo hasta el final del periodo que ya pagaste y luego tu cuenta vuelve al plan Free. Cancelar nunca borra tus datos; lo que supere los límites de Free se conserva, pero puede quedar en solo lectura.',
-        `Reembolsos: ${refundPolicy}.`,
+        'Los pagos no son reembolsables, salvo cuando la ley exija un reembolso.',
       ],
     },
     {
@@ -416,7 +414,7 @@ const termsEs: LegalDocument = {
     {
       heading: 'Ley aplicable',
       blocks: [
-        `Estos términos se rigen por las leyes de ${jurisdiction}. Cualquier disputa la resolverán los jueces competentes de ${jurisdiction}, sin perjuicio de los derechos de consumidor que te otorgue la ley de tu país de residencia.`,
+        'Estos términos se rigen por las leyes de Colombia. Cualquier disputa la resolverán los jueces competentes de Medellín, Colombia, sin perjuicio de los derechos de consumidor que te otorgue la ley de tu país de residencia.',
       ],
     },
     {
