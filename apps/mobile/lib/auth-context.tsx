@@ -21,6 +21,8 @@ type AuthContextType = {
   clearError: () => void
 }
 
+const SIGN_IN_TIMEOUT_MS = 15_000
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -47,10 +49,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback(async () => {
     setError(null)
-    const result = await authClient.signIn.social({
-      provider: 'google',
-      callbackURL: '/',
-    })
+    let result: Awaited<ReturnType<typeof authClient.signIn.social>>
+    try {
+      result = await authClient.signIn.social({
+        provider: 'google',
+        callbackURL: '/',
+        // Only bounds the request to the server; the timer is cleared before
+        // the system browser opens, so a slow Google login is not cut off.
+        fetchOptions: { timeout: SIGN_IN_TIMEOUT_MS },
+      })
+    } catch (cause) {
+      // A network failure or the timeout rejects instead of returning
+      // `result.error`, so without this the button silently did nothing.
+      const message = 'No se pudo conectar con el servidor. Intenta de nuevo.'
+      setError(message)
+      throw new Error(message, { cause })
+    }
     if (result.error) {
       const message =
         result.error.message || 'No se pudo iniciar sesión con Google.'
