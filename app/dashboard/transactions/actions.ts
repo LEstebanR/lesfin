@@ -9,6 +9,10 @@ import type {
   TransferInput,
 } from '@/app/dashboard/transactions/schemas'
 import { parseCurrencyInput } from '@/lib/currency'
+import {
+  DEBT_CATEGORY_BLOCKED_MESSAGE,
+  isDebtCategoryBlocked,
+} from '@/lib/expenses'
 import { FREE_LIMITS, currentMonthRange, getUserPlan } from '@/lib/plan-limits'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from '@/lib/session'
@@ -134,9 +138,12 @@ export async function createTransactionForUser(
   }
 
   const transaction = await prisma.$transaction(async (tx) => {
-    await tx.category.findFirstOrThrow({
+    const category = await tx.category.findFirstOrThrow({
       where: { id: categoryId, userId },
     })
+    if (isDebtCategoryBlocked(category)) {
+      throw new Error(DEBT_CATEGORY_BLOCKED_MESSAGE)
+    }
 
     if (accountId) {
       await tx.account.findFirstOrThrow({
@@ -244,9 +251,12 @@ export async function updateTransactionForUser(
       date: patch.date ?? existing.date,
     })
 
-    await tx.category.findFirstOrThrow({
+    const category = await tx.category.findFirstOrThrow({
       where: { id: merged.categoryId, userId },
     })
+    if (isDebtCategoryBlocked(category, existing.categoryId)) {
+      throw new Error(DEBT_CATEGORY_BLOCKED_MESSAGE)
+    }
 
     if (existing.accountId) {
       const oldChange =

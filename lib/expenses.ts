@@ -31,3 +31,28 @@ export function sumByUtcMonth(items: { date: Date; amount: unknown }[]) {
   }
   return totals
 }
+
+// The default "Deuda"/"Debt" category, where debt payments are mirrored.
+export function isDebtCategory(category: {
+  name: string
+  defaultKey?: string | null
+}) {
+  return (
+    category.defaultKey === 'debt' ||
+    /^(deuda|debt)$/i.test(category.name.trim())
+  )
+}
+
+export const DEBT_CATEGORY_BLOCKED_MESSAGE =
+  'Debt payments must be recorded as a debt payment (create_debt_payment, or "Record payment" on the debt), not as a transaction in the "Deuda" category — otherwise the debt balance and totalPaid are not updated.'
+
+// A plain transaction can't be created in, or moved into, the debt category:
+// that's how payments ended up as expenses that never lowered the debt.
+// Transactions already there (recorded before this rule) can still be edited
+// or moved out. `previousCategoryId` is the current category when editing.
+export function isDebtCategoryBlocked(
+  category: { id: string; name: string; defaultKey?: string | null },
+  previousCategoryId?: string | null
+) {
+  return isDebtCategory(category) && category.id !== previousCategoryId
+}

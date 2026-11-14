@@ -34,6 +34,10 @@ import { SelectGroup, SelectItem, SelectLabel } from '../ui/select'
 import { SelectField } from '../ui/select-field'
 import { SubcategoryCombobox } from '../ui/subcategory-combobox'
 import { Textarea } from '../ui/textarea'
+import {
+  DebtCategoryNotice,
+  useDebtCategoryBlocked,
+} from './debt-category-notice'
 import { useDashboardRefresh } from './refresh-provider'
 
 export function AddTransactionDialog({
@@ -100,6 +104,9 @@ export function AddTransactionDialog({
     },
   })
   const transactionType = form.watch('type')
+  const debtCategoryBlocked = useDebtCategoryBlocked(
+    transactionType === 'expense' ? categoryId : ''
+  )
 
   useEffect(() => {
     if (!isOpen) {
@@ -323,6 +330,7 @@ export function AddTransactionDialog({
                     onChange={setCategoryId}
                   />
                 </div>
+                {debtCategoryBlocked && <DebtCategoryNotice />}
                 <div className="flex flex-col gap-1">
                   <Label>{t('transactions.subcategory')}</Label>
                   <SubcategoryCombobox
@@ -336,7 +344,11 @@ export function AddTransactionDialog({
               <Label>{t('transactions.description')}</Label>
               <Textarea name="description" className="resize-none" />
             </div>
-            <Button className="w-full" type="submit" disabled={isSubmitting}>
+            <Button
+              className="w-full"
+              type="submit"
+              disabled={isSubmitting || debtCategoryBlocked}
+            >
               {isSubmitting ? (
                 <>
                   <Loader className="mr-2 h-4 w-4 animate-spin" />

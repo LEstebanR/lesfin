@@ -495,6 +495,9 @@ export const translations = {
       deleteSuccess: 'Deleted successfully!',
       deleteFailed: 'Failed to delete. Please try again.',
       debtPaymentLocked: 'Manage from Debts',
+      debtCategoryBlocked:
+        'To pay a debt, record the payment on the debt so its balance goes down.',
+      goToDebts: 'Go to Debts',
     },
     mcpGuide: {
       title: 'Connect an AI assistant',
@@ -676,6 +679,11 @@ export const translations = {
       recordingPayment: 'Recording Payment...',
       paymentRecorded: 'Payment recorded successfully!',
       deletePayment: 'Delete payment',
+      editPayment: 'Edit payment',
+      editPaymentDesc:
+        'Changes to the amount or account are applied to both balances.',
+      savingPayment: 'Saving...',
+      paymentUpdated: 'Payment updated',
       deletePaymentConfirmTitle: 'Delete this payment?',
       deletePaymentConfirmDescription:
         'The amount goes back to the account it was paid from and the debt balance goes up again. This action cannot be undone.',
@@ -1366,6 +1374,9 @@ export const translations = {
       deleteSuccess: '¡Eliminado exitosamente!',
       deleteFailed: 'No se pudo eliminar. Intentar de nuevo.',
       debtPaymentLocked: 'Gestionar desde Deudas',
+      debtCategoryBlocked:
+        'Para pagar una deuda, registrá el pago desde la deuda para que baje su saldo.',
+      goToDebts: 'Ir a Deudas',
     },
     debts: {
       title: 'Deudas',
@@ -1418,6 +1429,11 @@ export const translations = {
       recordingPayment: 'Registrando pago...',
       paymentRecorded: '¡Pago registrado exitosamente!',
       deletePayment: 'Eliminar pago',
+      editPayment: 'Editar pago',
+      editPaymentDesc:
+        'Los cambios de monto o cuenta se aplican a ambos saldos.',
+      savingPayment: 'Guardando...',
+      paymentUpdated: 'Pago actualizado',
       deletePaymentConfirmTitle: '¿Eliminar este pago?',
       deletePaymentConfirmDescription:
         'El monto vuelve a la cuenta desde la que se pagó y el saldo de la deuda sube de nuevo. Esta acción no se puede deshacer.',

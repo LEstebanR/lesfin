@@ -15,6 +15,7 @@ import {
   deleteDebtPaymentForUser,
   getDebtPaymentsForUser,
   getDebtsForUser,
+  updateDebtPaymentForUser,
 } from '@/app/dashboard/debts/actions'
 import { getOverviewDataForUser } from '@/app/dashboard/overview/actions'
 import { getMonthlyFinancialReportForUser } from '@/app/dashboard/spending-trends/actions'
@@ -526,7 +527,7 @@ const handler = createMcpHandler(
       {
         title: 'Update transaction',
         description:
-          "Correct a transaction that was recorded wrong — wrong account/debt, amount, category, description, or date — without creating compensating entries. Only send the fields that changed; anything omitted keeps its current value, except that sending accountId or debtId replaces the whole money source (the other one is cleared) — this is how you move a transaction from one account/debt to another, e.g. 'this was actually paid from Nequi, not Bancolombia'. This moves real money in the app — confirm with the user before calling. Cannot edit a transaction that mirrors a debt payment — delete it with delete_debt_payment and record it again with create_debt_payment.",
+          "Correct a transaction that was recorded wrong — wrong account/debt, amount, category, description, or date — without creating compensating entries. Only send the fields that changed; anything omitted keeps its current value, except that sending accountId or debtId replaces the whole money source (the other one is cleared) — this is how you move a transaction from one account/debt to another, e.g. 'this was actually paid from Nequi, not Bancolombia'. This moves real money in the app — confirm with the user before calling. Cannot edit a transaction that mirrors a debt payment — edit the payment with update_debt_payment instead.",
         inputSchema: z.object({
           transactionId: z.string().uuid(),
           accountId: z.string().uuid().nullish(),
@@ -667,11 +668,55 @@ const handler = createMcpHandler(
     )
 
     server.registerTool(
+      'update_debt_payment',
+      {
+        title: 'Update debt payment',
+        description:
+          "Correct a debt payment that was recorded wrong — wrong account, amount, date, or note — in place: takes the old amount back out of the old account and debt balances, applies the corrected one, and keeps its 'Deuda' expense in sync. Only send the fields that changed; send note as null to clear it. The debt can't be changed (delete with delete_debt_payment and record it again with create_debt_payment). This moves real money in the app — confirm with the user before calling. Get paymentId from list_debt_payments.",
+        inputSchema: z.object({
+          paymentId: z.string().uuid(),
+          accountId: z.string().uuid().optional(),
+          amount: z.number().positive().optional(),
+          date: z.string().optional(),
+          note: z.string().nullish(),
+        }),
+        outputSchema: anyRecord,
+        annotations: { readOnlyHint: false, destructiveHint: true },
+      },
+      withToolHandler('update_debt_payment', async (args, ctx) => {
+        const payment = await updateDebtPaymentForUser(
+          requireUserId(ctx),
+          args.paymentId,
+          {
+            ...(args.accountId !== undefined && { accountId: args.accountId }),
+            ...(args.amount !== undefined && { amount: args.amount }),
+            ...(args.date !== undefined && { date: new Date(args.date) }),
+            ...(args.note !== undefined && { note: args.note }),
+          }
+        )
+        const [debt, account] = await Promise.all([
+          prisma.debt.findUnique({ where: { id: payment.debtId } }),
+          prisma.account.findUnique({ where: { id: payment.accountId } }),
+        ])
+        const structuredContent = {
+          ...payment,
+          debtName: debt?.name ?? null,
+          remainingBalance: debt ? Number(debt.remainingBalance) : null,
+          accountName: account?.name ?? null,
+        }
+        return {
+          content: [{ type: 'text', text: JSON.stringify(structuredContent) }],
+          structuredContent,
+        }
+      })
+    )
+
+    server.registerTool(
       'delete_debt_payment',
       {
         title: 'Delete debt payment',
         description:
-          "Permanently delete a debt payment: gives the amount back to the account it was paid from, raises the debt's remaining balance by the same amount, and removes its mirrored 'Deuda' expense if it has one. To correct a payment, delete it and record it again with create_debt_payment. This moves real money in the app — confirm with the user before calling. Get paymentId from list_debt_payments.",
+          "Permanently delete a debt payment: gives the amount back to the account it was paid from, raises the debt's remaining balance by the same amount, and removes its mirrored 'Deuda' expense if it has one. To correct a payment, use update_debt_payment instead. This moves real money in the app — confirm with the user before calling. Get paymentId from list_debt_payments.",
         inputSchema: z.object({ paymentId: z.string().uuid() }),
         outputSchema: z.object({ success: z.boolean() }),
         annotations: { readOnlyHint: false, destructiveHint: true },

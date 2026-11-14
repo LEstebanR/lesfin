@@ -1,7 +1,12 @@
 'use server'
 
 import { parseCurrencyInput, parseOptionalCurrencyInput } from '@/lib/currency'
-import { applyDebtPayment, revertDebtPayment } from '@/lib/debt-payments'
+import {
+  type DebtPaymentPatch,
+  applyDebtPayment,
+  revertDebtPayment,
+  updateDebtPayment,
+} from '@/lib/debt-payments'
 import { FREE_LIMITS, getUserPlan, reconcileDebtLocks } from '@/lib/plan-limits'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from '@/lib/session'
@@ -290,6 +295,46 @@ export async function deleteDebtPayment(id: string) {
 
 export async function deleteDebtPaymentForUser(userId: string, id: string) {
   await prisma.$transaction((tx) => revertDebtPayment(tx, userId, id))
+}
+
+const debtPaymentPatchSchema = z.object({
+  accountId: uuidField.optional(),
+  amount: positiveAmount.optional(),
+  date: validDate.optional(),
+  note: optionalString,
+})
+
+export async function editDebtPayment(id: string, formData: FormData) {
+  const session = await getServerSession()
+  if (!session) throw new Error('Not authenticated')
+
+  return updateDebtPaymentForUser(session.user.id, id, {
+    accountId: formData.get('accountId') as string,
+    amount: parseCurrencyInput(formData.get('amount')),
+    date: new Date(formData.get('date') as string),
+    note: (formData.get('note') as string | null) ?? null,
+  })
+}
+
+// Only the fields present in the patch change; for note, sending null (or an
+// empty string) clears it while leaving it out keeps the current one.
+export async function updateDebtPaymentForUser(
+  userId: string,
+  id: string,
+  patch: DebtPaymentPatch
+) {
+  const parsed = debtPaymentPatchSchema.parse(patch)
+  const cleanPatch: DebtPaymentPatch = {
+    ...(parsed.accountId !== undefined && { accountId: parsed.accountId }),
+    ...(parsed.amount !== undefined && { amount: parsed.amount }),
+    ...(parsed.date !== undefined && { date: parsed.date }),
+    ...('note' in patch && { note: parsed.note }),
+  }
+  const payment = await prisma.$transaction((tx) =>
+    updateDebtPayment(tx, userId, id, cleanPatch)
+  )
+
+  return { ...payment, amount: Number(payment.amount) }
 }
 
 export async function createDebtInterestCharge(formData: FormData) {

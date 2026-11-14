@@ -1,7 +1,11 @@
 import { type Prisma } from '@prisma/client'
 import { describe, expect, it } from 'bun:test'
 
-import { applyDebtPayment, revertDebtPayment } from './debt-payments'
+import {
+  applyDebtPayment,
+  revertDebtPayment,
+  updateDebtPayment,
+} from './debt-payments'
 
 type Row = Record<string, unknown> & { id: string }
 
@@ -89,7 +93,11 @@ function seed(debtType: 'loan' | 'credit_card') {
         remainingBalance: 1000,
       },
     ],
-    accounts: [{ id: 'acc-1', userId: USER, currentBalance: 500 }],
+    accounts: [
+      { id: 'acc-1', userId: USER, currentBalance: 500 },
+      { id: 'acc-2', userId: USER, currentBalance: 900 },
+      { id: 'acc-other', userId: 'user-2', currentBalance: 100 },
+    ],
   })
 }
 
@@ -159,5 +167,79 @@ describe('revertDebtPayment', () => {
 
     await expect(revertDebtPayment(tx, 'user-2', created.id)).rejects.toThrow()
     expect(tables.debtPayment).toHaveLength(1)
+  })
+})
+
+describe('updateDebtPayment', () => {
+  it('re-applies a new amount to both balances and the mirrored expense', async () => {
+    const { tx, tables } = seed('loan')
+    const created = await applyDebtPayment(tx, USER, payment)
+    const updated = await updateDebtPayment(tx, USER, created.id, {
+      amount: 350,
+    })
+
+    expect(updated.id).toBe(created.id)
+    expect(tables.account[0].currentBalance).toBe(150)
+    expect(tables.debt[0].remainingBalance).toBe(650)
+    expect(tables.transaction).toHaveLength(1)
+    expect(tables.transaction[0]).toMatchObject({ amount: 350 })
+  })
+
+  it('moves the payment to another account', async () => {
+    const { tx, tables } = seed('credit_card')
+    const created = await applyDebtPayment(tx, USER, payment)
+    await updateDebtPayment(tx, USER, created.id, { accountId: 'acc-2' })
+
+    expect(tables.account[0].currentBalance).toBe(500)
+    expect(tables.account[1].currentBalance).toBe(700)
+    expect(tables.debt[0].remainingBalance).toBe(800)
+    expect(tables.transaction[0]).toMatchObject({ accountId: 'acc-2' })
+  })
+
+  it('keeps exactly one mirrored expense after several edits', async () => {
+    const { tx, tables } = seed('loan')
+    const created = await applyDebtPayment(tx, USER, payment)
+    const date = new Date('2026-11-10T00:00:00.000Z')
+    await updateDebtPayment(tx, USER, created.id, { amount: 100 })
+    await updateDebtPayment(tx, USER, created.id, { date, note: 'Cuota' })
+
+    expect(tables.debtPayment).toHaveLength(1)
+    expect(tables.transaction).toHaveLength(1)
+    expect(tables.transaction[0]).toMatchObject({
+      amount: 100,
+      date,
+      description: 'Cuota',
+    })
+    expect(tables.debt[0].remainingBalance).toBe(900)
+  })
+
+  it('leaves balances untouched when re-saved without changes', async () => {
+    const { tx, tables } = seed('loan')
+    const created = await applyDebtPayment(tx, USER, payment)
+    await updateDebtPayment(tx, USER, created.id, {})
+
+    expect(tables.account[0].currentBalance).toBe(300)
+    expect(tables.debt[0].remainingBalance).toBe(800)
+  })
+
+  it("rejects editing another user's payment", async () => {
+    const { tx, tables } = seed('loan')
+    const created = await applyDebtPayment(tx, USER, payment)
+
+    await expect(
+      updateDebtPayment(tx, 'user-2', created.id, { amount: 1 })
+    ).rejects.toThrow()
+    expect(tables.debt[0].remainingBalance).toBe(800)
+  })
+
+  it("rejects moving a payment to another user's account", async () => {
+    const { tx, tables } = seed('loan')
+    const created = await applyDebtPayment(tx, USER, payment)
+
+    await expect(
+      updateDebtPayment(tx, USER, created.id, { accountId: 'acc-other' })
+    ).rejects.toThrow()
+    expect(tables.account[0].currentBalance).toBe(300)
+    expect(tables.account[2].currentBalance).toBe(100)
   })
 })
