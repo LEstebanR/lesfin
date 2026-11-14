@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'bun:test'
 
-import { countsAsExpense, sumByUtcMonth } from './expenses'
+import {
+  countsAsExpense,
+  isDebtCategoryBlocked,
+  sumByUtcMonth,
+} from './expenses'
 
 describe('countsAsExpense', () => {
   it('counts expenses paid from an account', () => {
@@ -41,5 +45,32 @@ describe('sumByUtcMonth', () => {
     expect(totals[0]).toBe(150.5)
     expect(totals[10]).toBe(200)
     expect(totals.reduce((a, b) => a + b, 0)).toBe(350.5)
+  })
+})
+
+describe('isDebtCategoryBlocked', () => {
+  const deuda = { id: 'cat-debt', name: 'Deuda', defaultKey: 'debt' }
+  const food = { id: 'cat-food', name: 'Alimentación', defaultKey: 'food' }
+
+  it('blocks recording a new transaction in the debt category', () => {
+    expect(isDebtCategoryBlocked(deuda)).toBe(true)
+  })
+
+  it('blocks moving a transaction into the debt category', () => {
+    expect(isDebtCategoryBlocked(deuda, food.id)).toBe(true)
+  })
+
+  it('allows editing a transaction that is already in it', () => {
+    expect(isDebtCategoryBlocked(deuda, deuda.id)).toBe(false)
+  })
+
+  it('allows any other category', () => {
+    expect(isDebtCategoryBlocked(food)).toBe(false)
+  })
+
+  it('recognizes the debt category by name when it has no default key', () => {
+    expect(
+      isDebtCategoryBlocked({ id: 'x', name: ' debt ', defaultKey: null })
+    ).toBe(true)
   })
 })

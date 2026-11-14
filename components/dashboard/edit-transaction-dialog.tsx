@@ -28,6 +28,10 @@ import { SubcategoryCombobox } from '../ui/subcategory-combobox'
 import { Switch } from '../ui/switch'
 import { TextField } from '../ui/text-field'
 import { Textarea } from '../ui/textarea'
+import {
+  DebtCategoryNotice,
+  useDebtCategoryBlocked,
+} from './debt-category-notice'
 import { useDashboardRefresh } from './refresh-provider'
 
 export interface EditableTransaction {
@@ -72,6 +76,12 @@ export function EditTransactionDialog({
   const availableAccounts = rawAccounts.filter((a) => !a.isArchived)
   const availableDebts = rawDebts.filter((d) => d.type === 'credit_card')
   const [categoryId, setCategoryId] = useState('')
+  const debtCategoryBlocked = useDebtCategoryBlocked(
+    item?.itemType === 'transaction' && item.type === 'expense'
+      ? categoryId
+      : '',
+    item?.itemType === 'transaction' ? item.categoryId : null
+  )
   const [sourceType, setSourceType] = useState<'account' | 'debt'>('account')
   const [sourceId, setSourceId] = useState('')
   const [isRecurring, setIsRecurring] = useState(false)
@@ -313,6 +323,7 @@ export function EditTransactionDialog({
                     onChange={setCategoryId}
                   />
                 </div>
+                {debtCategoryBlocked && <DebtCategoryNotice />}
                 <div className="flex flex-col gap-1">
                   <Label>{t('transactions.subcategory')}</Label>
                   <SubcategoryCombobox
@@ -379,7 +390,11 @@ export function EditTransactionDialog({
                 )}
               </div>
             )}
-            <Button className="w-full" type="submit" disabled={isSubmitting}>
+            <Button
+              className="w-full"
+              type="submit"
+              disabled={isSubmitting || debtCategoryBlocked}
+            >
               {isSubmitting ? (
                 <>
                   <Loader className="mr-2 h-4 w-4 animate-spin" />

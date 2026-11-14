@@ -30,6 +30,7 @@ import {
 } from '../ui/table'
 import { DeleteDebtPaymentButton } from './delete-debt-payment-button'
 import { EditDebtDialog } from './edit-debt-dialog'
+import { EditDebtPaymentButton } from './edit-debt-payment-dialog'
 
 type MovementType = 'payment' | 'interest' | 'purchase'
 
@@ -65,6 +66,11 @@ export function DebtDetail() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
 
   const debt = debts.find((d) => d.id === debtId)
+
+  const paymentsById = useMemo(
+    () => new Map(payments.map((payment) => [payment.id, payment])),
+    [payments]
+  )
 
   const purchases = useMemo(
     () => transactions.filter((item) => item.debtId === debtId),
@@ -329,9 +335,17 @@ export function DebtDetail() {
                         })}
                       </TableCell>
                       <TableCell className="text-right">
-                        {movement.type === 'payment' && (
-                          <DeleteDebtPaymentButton paymentId={movement.id} />
-                        )}
+                        {movement.type === 'payment' &&
+                          paymentsById.has(movement.id) && (
+                            <div className="flex items-center justify-end gap-1">
+                              <EditDebtPaymentButton
+                                payment={paymentsById.get(movement.id)!}
+                              />
+                              <DeleteDebtPaymentButton
+                                paymentId={movement.id}
+                              />
+                            </div>
+                          )}
                       </TableCell>
                     </TableRow>
                   ))}
