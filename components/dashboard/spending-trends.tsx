@@ -50,8 +50,10 @@ export function SpendingTrends() {
   const [availableMonths, setAvailableMonths] = useState<number[]>([])
   const [loadingMonths, setLoadingMonths] = useState(false)
   const [exporting, setExporting] = useState(false)
-  const { data: rows = EMPTY_ARRAY, isLoading: loading } =
-    useCategoryMonthlyTotals(year)
+  const { data, isLoading: loading } = useCategoryMonthlyTotals(year)
+  const rows = data?.rows ?? EMPTY_ARRAY
+  const cardPurchaseTotals = data?.cardPurchaseTotals ?? EMPTY_ARRAY
+  const hasCardPurchases = cardPurchaseTotals.some((amount) => amount > 0)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -183,7 +185,7 @@ export function SpendingTrends() {
 
       {loading ? (
         <Loader className="m-auto" />
-      ) : rows.length === 0 ? (
+      ) : rows.length === 0 && !hasCardPurchases ? (
         <div className="bg-card text-card-foreground border-border shadow-soft flex flex-col items-center justify-center rounded-2xl border py-10 text-center">
           <Table className="text-muted-foreground/40 mb-3 h-12 w-12" />
           <p className="text-muted-foreground text-sm">
@@ -251,6 +253,30 @@ export function SpendingTrends() {
                   ${formatMoney(grandTotal, currency)}
                 </td>
               </tr>
+              {hasCardPurchases && (
+                // Shown for visibility only: card purchases are counted when
+                // the card is paid (in the "Deuda" row), so not in the total.
+                <tr className="text-muted-foreground">
+                  <td className="bg-background sticky left-0 px-4 py-2">
+                    <div>{t('spendingTrends.cardPurchases')}</div>
+                    <div className="text-xs">
+                      {t('spendingTrends.cardPurchasesHint')}
+                    </div>
+                  </td>
+                  {cardPurchaseTotals.map((amount, i) => (
+                    <td key={i} className="px-4 py-2 text-right">
+                      {amount > 0 ? `$${formatMoney(amount, currency)}` : '—'}
+                    </td>
+                  ))}
+                  <td className="px-4 py-2 text-right">
+                    $
+                    {formatMoney(
+                      cardPurchaseTotals.reduce((a, b) => a + b, 0),
+                      currency
+                    )}
+                  </td>
+                </tr>
+              )}
             </tfoot>
           </table>
         </div>

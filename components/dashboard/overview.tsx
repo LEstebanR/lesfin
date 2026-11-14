@@ -4,6 +4,7 @@ import { useCurrency } from '@/components/currency-provider'
 import { useLanguage } from '@/components/language-provider'
 import { getAccountIcon } from '@/lib/account-icons'
 import { formatMoney } from '@/lib/currency'
+import { countsAsExpense } from '@/lib/expenses'
 import {
   useBudgetItems,
   useBudgetOverview,
@@ -166,7 +167,7 @@ export function Overview() {
   const actualByDayThisMonth = useMemo(() => {
     const map = new Map<number, number>()
     for (const transaction of transactions) {
-      if (transaction.type !== 'expense') continue
+      if (!countsAsExpense(transaction)) continue
       const date = new Date(transaction.date)
       if (
         date.getUTCFullYear() !== currentYear ||
@@ -230,7 +231,7 @@ export function Overview() {
       .reduce((sum, t) => sum + Number(t.amount), 0)
 
     const expenses = monthlyTransactions
-      .filter((t) => t.type === 'expense')
+      .filter(countsAsExpense)
       .reduce((sum, t) => sum + Number(t.amount), 0)
 
     return { income, expenses }
@@ -242,7 +243,7 @@ export function Overview() {
     const monthlyExpenses = transactions.filter((transaction) => {
       const transactionDate = new Date(transaction.date)
       return (
-        transaction.type === 'expense' &&
+        countsAsExpense(transaction) &&
         transactionDate.getUTCFullYear() === currentYear &&
         transactionDate.getUTCMonth() + 1 === currentMonth
       )
@@ -276,7 +277,7 @@ export function Overview() {
 
     const actualByDay = new Map<number, number>()
     for (const transaction of transactions) {
-      if (transaction.type !== 'expense') continue
+      if (!countsAsExpense(transaction)) continue
       const date = new Date(transaction.date)
       if (
         date.getUTCFullYear() !== currentYear ||

@@ -20,7 +20,15 @@ import { Button } from '../ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Loader } from '../ui/loader'
 import { SortableTableHead } from '../ui/sortable-table-head'
-import { Table, TableBody, TableCell, TableHeader, TableRow } from '../ui/table'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../ui/table'
+import { DeleteDebtPaymentButton } from './delete-debt-payment-button'
 import { EditDebtDialog } from './edit-debt-dialog'
 
 type MovementType = 'payment' | 'interest' | 'purchase'
@@ -291,6 +299,7 @@ export function DebtDetail() {
                     >
                       {t('transactions.table.date')}
                     </SortableTableHead>
+                    <TableHead />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -318,6 +327,11 @@ export function DebtDetail() {
                         {new Date(movement.date).toLocaleDateString(undefined, {
                           timeZone: 'UTC',
                         })}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {movement.type === 'payment' && (
+                          <DeleteDebtPaymentButton paymentId={movement.id} />
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}

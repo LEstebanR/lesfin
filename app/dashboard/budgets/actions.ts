@@ -1,6 +1,7 @@
 'use server'
 
 import { parseCurrencyInput } from '@/lib/currency'
+import { cashExpenseWhere } from '@/lib/expenses'
 import { FREE_LIMITS, getUserPlan, monthsBack } from '@/lib/plan-limits'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from '@/lib/session'
@@ -324,7 +325,7 @@ export async function getBudgetOverviewForUser(
       select: { categoryId: true, amount: true },
     }),
     prisma.transaction.findMany({
-      where: { userId, type: 'expense', date: range },
+      where: { userId, ...cashExpenseWhere, date: range },
       select: { categoryId: true, amount: true },
     }),
   ])
@@ -371,7 +372,7 @@ export async function getBudgetDailyActuals(month: number, year: number) {
   const expenses = await prisma.transaction.findMany({
     where: {
       userId: session.user.id,
-      type: 'expense',
+      ...cashExpenseWhere,
       date: monthRange(month, year),
     },
     select: { date: true, amount: true, category: { select: { name: true } } },

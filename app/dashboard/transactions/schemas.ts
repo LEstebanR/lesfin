@@ -17,9 +17,15 @@ export const transactionSchema = z
     description: z.string(),
     date: validDate,
   })
+  // Exactly one money source. Also enforced by the
+  // transaction_single_source CHECK constraint in the database.
   .refine((data) => data.accountId || data.debtId, {
     message: 'An account or debt is required',
     path: ['accountId'],
+  })
+  .refine((data) => !(data.accountId && data.debtId), {
+    message: 'A transaction can come from an account or a debt, not both',
+    path: ['debtId'],
   })
   .refine((data) => !data.debtId || data.type === 'expense', {
     message: 'Only expenses can be charged to a debt',
