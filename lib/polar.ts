@@ -1,5 +1,7 @@
 import { Polar } from '@polar-sh/sdk'
 
+import { resolveSiteUrl } from './site'
+
 // Never let a local checkout accidentally hit live Polar.
 const server = process.env.NODE_ENV === 'production' ? 'production' : 'sandbox'
 
@@ -11,6 +13,6 @@ export function getPolarClient() {
 
 export function getAppUrl() {
   return process.env.NODE_ENV === 'production'
-    ? (process.env.NEXT_PUBLIC_APP_URL ?? 'https://lesfin.app')
+    ? resolveSiteUrl(process.env.NEXT_PUBLIC_APP_URL)
     : 'http://localhost:3000'
 }
