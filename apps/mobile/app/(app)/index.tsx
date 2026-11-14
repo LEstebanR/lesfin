@@ -221,6 +221,8 @@ function Home({
   add: () => void
 }) {
   const balance = accounts.reduce((sum, a) => sum + a.balance, 0)
+  const { user } = useAuth()
+  const firstName = user?.name?.split(' ')[0]
   const income = transactions
     .filter((t) => t.kind === 'income')
     .reduce((sum, t) => sum + t.amount, 0)
@@ -236,7 +238,8 @@ function Home({
         <View>
           <Text style={styles.eyebrow}>MI RESUMEN</Text>
           <Text style={styles.greetingText}>
-            Hola, Luis <Text style={styles.star}>✦</Text>
+            {firstName ? `Hola, ${firstName}` : 'Hola'}{' '}
+            <Text style={styles.star}>✦</Text>
           </Text>
         </View>
         <Pressable style={styles.avatarLarge} onPress={() => go('more')}>
@@ -533,7 +536,8 @@ function Budget() {
 
 function More({ onLogout }: { onLogout: () => void }) {
   const { user } = useAuth()
-  const initial = user?.name?.charAt(0).toUpperCase() || 'L'
+  const displayName = user?.name || user?.email || ''
+  const initial = displayName.charAt(0).toUpperCase()
 
   return (
     <ScrollView contentContainerStyle={styles.scroll}>
@@ -548,9 +552,7 @@ function More({ onLogout }: { onLogout: () => void }) {
           <Text style={styles.avatarText}>{initial}</Text>
         </View>
         <View style={styles.profileCopy}>
-          <Text style={styles.profileName}>
-            {user?.name || 'Luis Esteban Ramírez'}
-          </Text>
+          <Text style={styles.profileName}>{displayName}</Text>
           <Text style={styles.meta}>Tu cuenta Lesfin</Text>
         </View>
         <Icon color={C.muted} name="chevron-forward" />

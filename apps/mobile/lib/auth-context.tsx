@@ -65,11 +65,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     signingOut.current = true
-    const result = await authClient.signOut()
-    if (result.error) {
-      signingOut.current = false
-      setError('No se pudo cerrar sesión. Intenta de nuevo.')
+    try {
+      const result = await authClient.signOut()
+      if (!result.error) return
+    } catch {
+      // Network failure or timeout; handled below like a server error.
     }
+    // The expo client clears the stored cookie before the request is sent, so
+    // the device is already signed out even if the server call failed. Refresh
+    // the session so the UI follows; the server session simply expires.
+    authClient.$store.notify('$sessionSignal')
   }, [])
 
   const value = useMemo(

@@ -38,7 +38,7 @@
     "@trivago/prettier-plugin-sort-imports": "5.2.2",
     "@vercel/analytics": "^2.0.1",
     "@vercel/blob": "^2.6.1",
-    "better-auth": "^1.6.23",
+    "better-auth": "1.6.23",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "cmdk": "^1.1.1",
