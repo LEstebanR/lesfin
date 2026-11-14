@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { GoogleSignInButton } from '@/components/ui/google-sign-in-button'
+import { LegalNotice } from '@/components/ui/legal-notice'
 import { Logo } from '@/components/ui/logo'
 import Link from 'next/link'
 
@@ -30,6 +31,7 @@ export default function Signup() {
           </CardDescription>
           <CardContent className="mt-4">
             <GoogleSignInButton />
+            <LegalNotice />
           </CardContent>
         </CardHeader>
       </Card>

@@ -18,6 +18,14 @@ export function Footer({ showBlog = false }: { showBlog?: boolean }) {
             <div className="bg-primary mx-2 h-[30px] w-[0.5px] rotate-[20deg]" />
           </>
         )}
+        <Link href="/privacy" className="text-sm font-medium">
+          {t('footer.privacy')}
+        </Link>
+        <span className="text-muted-foreground px-1 text-sm">·</span>
+        <Link href="/terms" className="text-sm font-medium">
+          {t('footer.terms')}
+        </Link>
+        <div className="bg-primary mx-2 h-[30px] w-[0.5px] rotate-[20deg]" />
         <Link
           href="https://github.com/LEstebanR/lesteban"
           aria-label="Github project"
