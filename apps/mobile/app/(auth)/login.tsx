@@ -1,27 +1,13 @@
 import { Ionicons } from '@expo/vector-icons'
 import { useState } from 'react'
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 
+import { Logo } from '../../components/logo'
 import { useAuth } from '../../lib/auth-context'
+import { colors, fonts, radius, shadowSoft } from '../../lib/theme'
 
-const C = {
-  bg: '#F8F9F5',
-  card: '#FFFFFF',
-  text: '#1D2530',
-  muted: '#7A818A',
-  border: '#E8EBE5',
-  green: '#B5E44A',
-  greenDark: '#8DBA24',
-  navy: '#1D2530',
-  red: '#D95C5C',
-}
-
+// Same layout and copy as the web's app/login/page.tsx: logo on top, then a
+// card with the title, subtitle and the Google button.
 export default function LoginScreen() {
   const { signIn, error, clearError } = useAuth()
   const [loading, setLoading] = useState(false)
@@ -40,162 +26,106 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.logo}>lesfin</Text>
-          <Text style={styles.subtitle}>Tu compañero financiero personal</Text>
-        </View>
+      <Logo />
 
-        <View style={styles.illustration}>
-          <View style={styles.illustrationCircle}>
-            <Ionicons color={C.green} name="wallet-outline" size={64} />
-          </View>
-        </View>
-
-        <View style={styles.welcome}>
-          <Text style={styles.title}>Bienvenido</Text>
-          <Text style={styles.description}>
-            Inicia sesión para comenzar a gestionar tus finanzas de manera
-            inteligente
-          </Text>
-        </View>
+      <View style={styles.card}>
+        <Text style={styles.title}>¡Bienvenido de nuevo!</Text>
+        <Text style={styles.subtitle}>
+          Iniciar sesión para acceder a tu cuenta
+        </Text>
 
         {error && (
-          <View style={styles.errorContainer}>
-            <Ionicons color={C.red} name="alert-circle-outline" size={20} />
+          <View style={styles.error}>
+            <Ionicons
+              color={colors.destructive}
+              name="alert-circle-outline"
+              size={18}
+            />
             <Text style={styles.errorText}>{error}</Text>
           </View>
         )}
 
         <Pressable
+          accessibilityRole="button"
           disabled={loading}
           onPress={handleGoogleSignIn}
-          style={[styles.googleButton, loading && styles.googleButtonDisabled]}
+          style={({ pressed }) => [
+            styles.button,
+            (pressed || loading) && styles.buttonDimmed,
+          ]}
         >
-          {loading ? (
-            <ActivityIndicator color={C.navy} />
-          ) : (
-            <>
-              <Ionicons color={C.navy} name="logo-google" size={20} />
-              <Text style={styles.googleButtonText}>Continuar con Google</Text>
-            </>
-          )}
+          <Text style={styles.buttonText}>
+            {loading ? 'Redirigiendo a Google...' : 'Continuar con Google'}
+          </Text>
         </Pressable>
-
-        <Text style={styles.disclaimer}>
-          Al continuar, aceptas nuestros términos de servicio y política de
-          privacidad
-        </Text>
       </View>
-
-      <Text style={styles.footer}>LESFIN · VERSIÓN 0.1.0</Text>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: C.bg,
+    alignItems: 'center',
+    backgroundColor: colors.background,
     flex: 1,
-    justifyContent: 'space-between',
+    gap: 16,
+    paddingHorizontal: 16,
+    paddingTop: 96,
   },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 60,
-  },
-  logo: {
-    color: C.text,
-    fontSize: 36,
-    fontWeight: '800',
-    letterSpacing: -1.5,
-    marginBottom: 8,
-  },
-  subtitle: {
-    color: C.muted,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  illustration: {
-    alignItems: 'center',
-    marginBottom: 48,
-  },
-  illustrationCircle: {
-    alignItems: 'center',
-    backgroundColor: `${C.green}22`,
-    borderRadius: 80,
-    height: 160,
-    justifyContent: 'center',
-    width: 160,
-  },
-  welcome: {
-    alignItems: 'center',
-    marginBottom: 40,
+  card: {
+    ...shadowSoft,
+    alignSelf: 'stretch',
+    backgroundColor: colors.card,
+    borderColor: colors.border,
+    borderRadius: radius['2xl'],
+    borderWidth: 1,
+    gap: 6,
+    padding: 24,
   },
   title: {
-    color: C.text,
-    fontSize: 28,
-    fontWeight: '800',
-    letterSpacing: -0.8,
-    marginBottom: 12,
-  },
-  description: {
-    color: C.muted,
-    fontSize: 14,
-    lineHeight: 22,
+    color: colors.foreground,
+    fontFamily: fonts.bold,
+    fontSize: 24,
     textAlign: 'center',
   },
-  errorContainer: {
+  subtitle: {
+    color: colors.mutedForeground,
+    fontFamily: fonts.regular,
+    fontSize: 18,
+    lineHeight: 26,
+    textAlign: 'center',
+  },
+  error: {
     alignItems: 'center',
-    backgroundColor: `${C.red}11`,
-    borderColor: `${C.red}44`,
-    borderRadius: 12,
+    backgroundColor: `${colors.destructive}0D`,
+    borderColor: `${colors.destructive}33`,
+    borderRadius: radius.md,
     borderWidth: 1,
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: 24,
-    padding: 14,
+    gap: 8,
+    marginTop: 16,
+    padding: 12,
   },
   errorText: {
-    color: C.red,
+    color: colors.destructive,
     flex: 1,
-    fontSize: 12,
-    fontWeight: '600',
+    fontFamily: fonts.medium,
+    fontSize: 14,
   },
-  googleButton: {
+  button: {
     alignItems: 'center',
-    backgroundColor: C.green,
-    borderRadius: 14,
-    flexDirection: 'row',
-    gap: 12,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    height: 44,
     justifyContent: 'center',
-    marginBottom: 20,
-    paddingVertical: 16,
+    marginTop: 24,
   },
-  googleButtonDisabled: {
+  buttonDimmed: {
     opacity: 0.6,
   },
-  googleButtonText: {
-    color: C.navy,
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  disclaimer: {
-    color: C.muted,
-    fontSize: 11,
-    lineHeight: 17,
-    textAlign: 'center',
-  },
-  footer: {
-    color: C.muted,
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1.2,
-    paddingBottom: 32,
-    textAlign: 'center',
+  buttonText: {
+    color: colors.primaryForeground,
+    fontFamily: fonts.medium,
+    fontSize: 14,
   },
 })

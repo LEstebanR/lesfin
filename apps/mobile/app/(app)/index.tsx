@@ -15,6 +15,7 @@ import {
 } from 'react-native'
 
 import { useAuth } from '../../lib/auth-context'
+import { colors, fonts } from '../../lib/theme'
 
 type Tab = 'home' | 'transactions' | 'accounts' | 'budget' | 'more'
 type Kind = 'expense' | 'income'
@@ -39,19 +40,20 @@ type Account = {
   icon: IconName
 }
 
+// Palette aliases over the shared web tokens (lib/theme.ts).
 const C = {
-  bg: '#F8F9F5',
-  card: '#FFFFFF',
-  text: '#1D2530',
-  muted: '#7A818A',
-  border: '#E8EBE5',
-  green: '#B5E44A',
-  greenDark: '#8DBA24',
-  navy: '#1D2530',
-  red: '#D95C5C',
-  blue: '#5D91D9',
-  purple: '#9574D1',
-  orange: '#E7A14D',
+  bg: colors.background,
+  card: colors.card,
+  text: colors.foreground,
+  muted: colors.mutedForeground,
+  border: colors.border,
+  green: colors.primary,
+  greenDark: colors.primary,
+  navy: colors.foreground,
+  red: colors.destructive,
+  blue: colors.chart3,
+  purple: colors.chart5,
+  orange: colors.chart4,
 }
 
 const initialAccounts: Account[] = [
@@ -804,12 +806,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 22,
     paddingTop: Platform.OS === 'ios' ? 18 : 14,
   },
-  logo: { color: C.text, fontSize: 23, fontWeight: '800', letterSpacing: -1 },
+  logo: {
+    color: C.text,
+    fontSize: 23,
+    fontFamily: fonts.bold,
+    letterSpacing: -1,
+  },
   headerRight: { alignItems: 'center', flexDirection: 'row', gap: 13 },
   headerTitle: {
     color: C.muted,
     fontSize: 10,
-    fontWeight: '800',
+    fontFamily: fonts.bold,
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
@@ -841,7 +848,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 44,
   },
-  avatarText: { color: '#fff', fontSize: 15, fontWeight: '800' },
+  avatarText: { color: '#fff', fontSize: 15, fontFamily: fonts.bold },
   greeting: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -851,14 +858,14 @@ const styles = StyleSheet.create({
   eyebrow: {
     color: C.muted,
     fontSize: 10,
-    fontWeight: '800',
+    fontFamily: fonts.bold,
     letterSpacing: 1.6,
     marginBottom: 5,
   },
   greetingText: {
     color: C.text,
     fontSize: 27,
-    fontWeight: '800',
+    fontFamily: fonts.bold,
     letterSpacing: -0.7,
   },
   star: { color: C.greenDark, fontSize: 20 },
@@ -871,22 +878,22 @@ const styles = StyleSheet.create({
   balanceLabel: {
     color: 'rgba(255,255,255,.6)',
     fontSize: 10,
-    fontWeight: '800',
+    fontFamily: fonts.bold,
     letterSpacing: 1.5,
   },
   balance: {
     color: '#fff',
     fontSize: 34,
-    fontWeight: '800',
+    fontFamily: fonts.bold,
     letterSpacing: -1.2,
     marginVertical: 14,
   },
   trend: { alignItems: 'center', flexDirection: 'row', gap: 4 },
-  trendText: { color: C.green, fontSize: 12, fontWeight: '700' },
+  trendText: { color: C.green, fontSize: 12, fontFamily: fonts.semibold },
   currency: {
     color: 'rgba(255,255,255,.55)',
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: fonts.semibold,
     letterSpacing: 1,
   },
   quickActions: {
@@ -902,7 +909,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 48,
   },
-  quickLabel: { color: C.text, fontSize: 11, fontWeight: '600' },
+  quickLabel: { color: C.text, fontSize: 11, fontFamily: fonts.medium },
   stats: { flexDirection: 'row', gap: 12, marginBottom: 25 },
   stat: {
     backgroundColor: C.card,
@@ -921,10 +928,10 @@ const styles = StyleSheet.create({
   statLabel: {
     color: C.muted,
     fontSize: 9,
-    fontWeight: '800',
+    fontFamily: fonts.bold,
     letterSpacing: 1,
   },
-  statValue: { color: C.text, fontSize: 17, fontWeight: '800' },
+  statValue: { color: C.text, fontSize: 17, fontFamily: fonts.bold },
   meta: { color: C.muted, fontSize: 10, marginTop: 3 },
   sectionTitle: {
     alignItems: 'center',
@@ -933,8 +940,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     marginTop: 3,
   },
-  sectionHeading: { color: C.text, fontSize: 17, fontWeight: '800' },
-  action: { color: C.greenDark, fontSize: 12, fontWeight: '700' },
+  sectionHeading: { color: C.text, fontSize: 17, fontFamily: fonts.bold },
+  action: { color: C.greenDark, fontSize: 12, fontFamily: fonts.semibold },
   card: {
     backgroundColor: C.card,
     borderColor: C.border,
@@ -959,8 +966,8 @@ const styles = StyleSheet.create({
     width: 43,
   },
   transactionCopy: { flex: 1, marginLeft: 12 },
-  transactionTitle: { color: C.text, fontSize: 13, fontWeight: '700' },
-  transactionAmount: { color: C.red, fontSize: 12, fontWeight: '800' },
+  transactionTitle: { color: C.text, fontSize: 13, fontFamily: fonts.semibold },
+  transactionAmount: { color: C.red, fontSize: 12, fontFamily: fonts.bold },
   income: { color: C.greenDark },
   horizontal: { gap: 11, paddingBottom: 8 },
   miniAccount: {
@@ -979,8 +986,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     width: 34,
   },
-  miniName: { color: C.text, fontSize: 12, fontWeight: '700' },
-  miniBalance: { color: C.text, fontSize: 15, fontWeight: '800', marginTop: 5 },
+  miniName: { color: C.text, fontSize: 12, fontFamily: fonts.semibold },
+  miniBalance: {
+    color: C.text,
+    fontSize: 15,
+    fontFamily: fonts.bold,
+    marginTop: 5,
+  },
   pageHead: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -991,7 +1003,7 @@ const styles = StyleSheet.create({
   pageTitle: {
     color: C.text,
     fontSize: 28,
-    fontWeight: '800',
+    fontFamily: fonts.bold,
     letterSpacing: -0.8,
   },
   addButton: {
@@ -1014,6 +1026,7 @@ const styles = StyleSheet.create({
   searchInput: {
     color: C.text,
     flex: 1,
+    fontFamily: fonts.regular,
     fontSize: 13,
     height: 45,
     marginLeft: 8,
@@ -1031,12 +1044,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   chipActive: { backgroundColor: C.green, borderColor: C.green },
-  chipText: { color: C.muted, fontSize: 11, fontWeight: '700' },
-  chipTextActive: { color: C.navy },
+  chipText: { color: C.muted, fontSize: 11, fontFamily: fonts.semibold },
+  chipTextActive: { color: colors.primaryForeground },
   month: {
     color: C.muted,
     fontSize: 10,
-    fontWeight: '800',
+    fontFamily: fonts.bold,
     letterSpacing: 1.4,
     marginBottom: 10,
   },
@@ -1049,10 +1062,15 @@ const styles = StyleSheet.create({
   darkLabel: {
     color: 'rgba(29,37,48,.62)',
     fontSize: 9,
-    fontWeight: '800',
+    fontFamily: fonts.bold,
     letterSpacing: 1.3,
   },
-  total: { color: C.navy, fontSize: 32, fontWeight: '800', marginVertical: 12 },
+  total: {
+    color: C.navy,
+    fontSize: 32,
+    fontFamily: fonts.bold,
+    marginVertical: 12,
+  },
   totalMeta: { color: 'rgba(255,255,255,.6)', fontSize: 11 },
   segment: {
     backgroundColor: '#EEF0EB',
@@ -1067,14 +1085,14 @@ const styles = StyleSheet.create({
     borderRadius: 9,
     color: C.text,
     fontSize: 11,
-    fontWeight: '800',
+    fontFamily: fonts.bold,
     paddingHorizontal: 13,
     paddingVertical: 9,
   },
   segmentText: {
     color: C.muted,
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: fonts.semibold,
     paddingHorizontal: 11,
     paddingVertical: 9,
   },
@@ -1099,14 +1117,19 @@ const styles = StyleSheet.create({
   accountType: {
     color: C.muted,
     fontSize: 9,
-    fontWeight: '800',
+    fontFamily: fonts.bold,
     letterSpacing: 1.1,
   },
-  accountName: { color: C.text, fontSize: 14, fontWeight: '700', marginTop: 4 },
+  accountName: {
+    color: C.text,
+    fontSize: 14,
+    fontFamily: fonts.semibold,
+    marginTop: 4,
+  },
   accountBalance: {
     color: C.text,
     fontSize: 16,
-    fontWeight: '800',
+    fontFamily: fonts.bold,
     marginTop: 6,
   },
   monthButton: {
@@ -1119,7 +1142,7 @@ const styles = StyleSheet.create({
     gap: 4,
     padding: 10,
   },
-  monthButtonText: { color: C.text, fontSize: 11, fontWeight: '700' },
+  monthButtonText: { color: C.text, fontSize: 11, fontFamily: fonts.semibold },
   budgetHero: {
     alignItems: 'center',
     backgroundColor: C.navy,
@@ -1132,7 +1155,7 @@ const styles = StyleSheet.create({
   budgetValue: {
     color: '#fff',
     fontSize: 28,
-    fontWeight: '800',
+    fontFamily: fonts.bold,
     marginVertical: 9,
   },
   circle: {
@@ -1144,11 +1167,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 80,
   },
-  circleText: { color: '#fff', fontSize: 17, fontWeight: '800' },
+  circleText: { color: '#fff', fontSize: 17, fontFamily: fonts.bold },
   budgetRow: { paddingVertical: 13 },
   budgetName: { alignItems: 'center', flexDirection: 'row', gap: 8 },
   smallDot: { borderRadius: 4, height: 8, width: 8 },
-  budgetAmount: { color: C.text, fontSize: 11, fontWeight: '800' },
+  budgetAmount: { color: C.text, fontSize: 11, fontFamily: fonts.bold },
   track: {
     backgroundColor: '#EEF0EB',
     borderRadius: 3,
@@ -1166,7 +1189,7 @@ const styles = StyleSheet.create({
     padding: 15,
   },
   tipText: { color: C.muted, flex: 1, fontSize: 11, lineHeight: 17 },
-  tipTitle: { color: C.text, fontWeight: '800' },
+  tipTitle: { color: C.text, fontFamily: fonts.bold },
   profile: {
     alignItems: 'center',
     backgroundColor: C.card,
@@ -1186,11 +1209,11 @@ const styles = StyleSheet.create({
     width: 50,
   },
   profileCopy: { flex: 1, marginLeft: 12 },
-  profileName: { color: C.text, fontSize: 14, fontWeight: '800' },
+  profileName: { color: C.text, fontSize: 14, fontFamily: fonts.bold },
   menuLabel: {
     color: C.muted,
     fontSize: 10,
-    fontWeight: '800',
+    fontFamily: fonts.bold,
     letterSpacing: 1.4,
     marginBottom: 10,
     marginLeft: 3,
@@ -1214,13 +1237,13 @@ const styles = StyleSheet.create({
     color: C.text,
     flex: 1,
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: fonts.medium,
     marginLeft: 12,
   },
   version: {
     color: C.muted,
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: fonts.semibold,
     letterSpacing: 1.2,
     marginTop: 28,
     textAlign: 'center',
@@ -1235,7 +1258,7 @@ const styles = StyleSheet.create({
     paddingTop: 9,
   },
   tab: { alignItems: 'center', gap: 3, minWidth: 58 },
-  tabText: { color: C.muted, fontSize: 9, fontWeight: '700' },
+  tabText: { color: C.muted, fontSize: 9, fontFamily: fonts.semibold },
   tabActive: { color: C.greenDark },
   overlay: {
     backgroundColor: 'rgba(29,37,48,.45)',
@@ -1263,7 +1286,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 20,
   },
-  modalTitle: { color: C.text, fontSize: 25, fontWeight: '800' },
+  modalTitle: { color: C.text, fontSize: 25, fontFamily: fonts.bold },
   typeToggle: {
     backgroundColor: '#EDEFEB',
     borderRadius: 12,
@@ -1277,7 +1300,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     color: C.muted,
     fontSize: 9,
-    fontWeight: '800',
+    fontFamily: fonts.bold,
     letterSpacing: 1.3,
     marginBottom: 7,
     marginTop: 8,
@@ -1288,11 +1311,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     color: C.text,
+    fontFamily: fonts.regular,
     fontSize: 15,
     height: 49,
     paddingHorizontal: 14,
   },
-  amountInput: { fontSize: 21, fontWeight: '800' },
+  amountInput: { fontSize: 21, fontFamily: fonts.bold },
   save: {
     alignItems: 'center',
     backgroundColor: C.green,
@@ -1303,5 +1327,9 @@ const styles = StyleSheet.create({
     marginTop: 25,
     paddingVertical: 15,
   },
-  saveText: { color: C.navy, fontSize: 13, fontWeight: '800' },
+  saveText: {
+    color: colors.primaryForeground,
+    fontSize: 13,
+    fontFamily: fonts.bold,
+  },
 })
