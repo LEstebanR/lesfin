@@ -32,6 +32,8 @@ export const translations = {
     footer: {
       madeWith: 'Made with',
       by: 'by',
+      privacy: 'Privacy',
+      terms: 'Terms',
     },
     landing: {
       eyebrow: 'Personal finances, without the mess',
@@ -283,6 +285,10 @@ export const translations = {
       signupSubtitle: 'Sign up with Google to get started',
       continueWithGoogle: 'Continue with Google',
       redirectingToGoogle: 'Redirecting to Google...',
+      legalPrefix: 'By continuing, you agree to the',
+      legalTerms: 'Terms of Service',
+      legalAnd: 'and acknowledge the',
+      legalPrivacy: 'Privacy Policy',
     },
     dashboardPreview: {
       overview: 'Overview',
@@ -882,6 +888,8 @@ export const translations = {
     footer: {
       madeWith: 'Hecho con',
       by: 'por',
+      privacy: 'Privacidad',
+      terms: 'Términos',
     },
     landing: {
       eyebrow: 'Finanzas personales, sin complicaciones',
@@ -1134,6 +1142,10 @@ export const translations = {
       signupSubtitle: 'Registrarse con Google para empezar',
       continueWithGoogle: 'Continuar con Google',
       redirectingToGoogle: 'Redirigiendo a Google...',
+      legalPrefix: 'Al continuar, aceptas los',
+      legalTerms: 'Términos del servicio',
+      legalAnd: 'y reconoces la',
+      legalPrivacy: 'Política de privacidad',
     },
     dashboardPreview: {
       overview: 'Resumen',
