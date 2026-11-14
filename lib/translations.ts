@@ -675,6 +675,12 @@ export const translations = {
       recordPaymentDesc: 'Record a payment towards "{name}".',
       recordingPayment: 'Recording Payment...',
       paymentRecorded: 'Payment recorded successfully!',
+      deletePayment: 'Delete payment',
+      deletePaymentConfirmTitle: 'Delete this payment?',
+      deletePaymentConfirmDescription:
+        'The amount goes back to the account it was paid from and the debt balance goes up again. This action cannot be undone.',
+      paymentDeleted: 'Payment deleted',
+      paymentDeleteFailed: 'Failed to delete the payment. Please try again.',
       fromAccount: 'From Account',
       fromAccountRequired: 'Account is required',
       paymentAmount: 'Payment Amount',
@@ -825,6 +831,8 @@ export const translations = {
       exportReport: 'Export report',
       downloadReport: 'Download Markdown',
       exporting: 'Exporting...',
+      cardPurchases: 'Credit card purchases',
+      cardPurchasesHint: 'Not in the total: counted when the card is paid',
     },
     profile: {
       title: 'Profile settings',
@@ -1409,6 +1417,12 @@ export const translations = {
       recordPaymentDesc: 'Registrar un pago hacia "{name}".',
       recordingPayment: 'Registrando pago...',
       paymentRecorded: '¡Pago registrado exitosamente!',
+      deletePayment: 'Eliminar pago',
+      deletePaymentConfirmTitle: '¿Eliminar este pago?',
+      deletePaymentConfirmDescription:
+        'El monto vuelve a la cuenta desde la que se pagó y el saldo de la deuda sube de nuevo. Esta acción no se puede deshacer.',
+      paymentDeleted: 'Pago eliminado',
+      paymentDeleteFailed: 'No se pudo eliminar el pago. Intentar de nuevo.',
       fromAccount: 'Cuenta de Origen',
       fromAccountRequired: 'La cuenta es obligatoria',
       paymentAmount: 'Monto del Pago',
@@ -1560,6 +1574,8 @@ export const translations = {
       exportReport: 'Exportar informe',
       downloadReport: 'Descargar Markdown',
       exporting: 'Exportando...',
+      cardPurchases: 'Compras con tarjeta',
+      cardPurchasesHint: 'No suman al total: se cuentan al pagar la tarjeta',
     },
     mcpGuide: {
       title: 'Conectar un asistente de IA',

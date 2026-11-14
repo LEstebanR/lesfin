@@ -1,5 +1,11 @@
 'use server'
 
+import {
+  cardPurchaseWhere,
+  cashExpenseWhere,
+  countsAsExpense,
+  sumByUtcMonth,
+} from '@/lib/expenses'
 import { FREE_LIMITS, getUserPlan, monthsBack } from '@/lib/plan-limits'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from '@/lib/session'
@@ -32,14 +38,18 @@ export async function getCategoryMonthlyTotals(year: number) {
     lt: new Date(Date.UTC(year + 1, 0, 1)),
   }
 
-  const [categories, expenses] = await Promise.all([
+  const [categories, expenses, cardPurchases] = await Promise.all([
     prisma.category.findMany({
       where: { userId: session.user.id, type: 'expense' },
       orderBy: { name: 'asc' },
     }),
     prisma.transaction.findMany({
-      where: { userId: session.user.id, type: 'expense', date: range },
+      where: { userId: session.user.id, ...cashExpenseWhere, date: range },
       select: { categoryId: true, amount: true, date: true },
+    }),
+    prisma.transaction.findMany({
+      where: { userId: session.user.id, ...cardPurchaseWhere, date: range },
+      select: { amount: true, date: true },
     }),
   ])
 
@@ -53,8 +63,15 @@ export async function getCategoryMonthlyTotals(year: number) {
     monthlyTotals[expense.date.getUTCMonth()] += Number(expense.amount)
   }
 
+  // Card purchases are counted when the card is paid (as a "Deuda" expense),
+  // so they're returned apart and the UI shows them without summing them.
+  const cardPurchaseTotals = sumByUtcMonth(cardPurchases)
+
   if (plan !== 'PRO') {
-    for (const monthlyTotals of monthlyTotalsByCategory.values()) {
+    for (const monthlyTotals of [
+      ...monthlyTotalsByCategory.values(),
+      cardPurchaseTotals,
+    ]) {
       for (let i = 0; i < 12; i++) {
         const back = monthsBack(i + 1, year)
         if (back < 0 || back >= FREE_LIMITS.trendsMonths) monthlyTotals[i] = 0
@@ -62,13 +79,16 @@ export async function getCategoryMonthlyTotals(year: number) {
     }
   }
 
-  return categories
-    .map((category) => ({
-      categoryId: category.id,
-      categoryName: category.name,
-      monthlyTotals: monthlyTotalsByCategory.get(category.id)!,
-    }))
-    .filter((item) => item.monthlyTotals.some((amount) => amount > 0))
+  return {
+    rows: categories
+      .map((category) => ({
+        categoryId: category.id,
+        categoryName: category.name,
+        monthlyTotals: monthlyTotalsByCategory.get(category.id)!,
+      }))
+      .filter((item) => item.monthlyTotals.some((amount) => amount > 0)),
+    cardPurchaseTotals,
+  }
 }
 
 function escapeMarkdown(value: string) {
@@ -225,6 +245,9 @@ export async function getMonthlyFinancialReportForUser(
         income: 'Ingresos',
         expenses: 'Gastos',
         transfers: 'Transferencias',
+        cardPurchases: 'Compras con tarjeta',
+        cardPurchasesNote:
+          'no suman a los gastos: se cuentan al pagar la tarjeta, como gasto en Deuda',
         from: 'Desde',
         to: 'Hacia',
         noMovements: 'No hubo movimientos en este período.',
@@ -252,6 +275,9 @@ export async function getMonthlyFinancialReportForUser(
         income: 'Income',
         expenses: 'Expenses',
         transfers: 'Transfers',
+        cardPurchases: 'Credit card purchases',
+        cardPurchasesNote:
+          'not added to expenses: counted when the card is paid, as a Debt expense',
         from: 'From',
         to: 'To',
         noMovements: 'There were no movements in this period.',
@@ -266,7 +292,12 @@ export async function getMonthlyFinancialReportForUser(
     .filter((transaction) => transaction.type === 'income')
     .reduce((sum, transaction) => sum + Number(transaction.amount), 0)
   const expenses = transactions
-    .filter((transaction) => transaction.type === 'expense')
+    .filter(countsAsExpense)
+    .reduce((sum, transaction) => sum + Number(transaction.amount), 0)
+  const cardPurchases = transactions
+    .filter(
+      (transaction) => transaction.type === 'expense' && transaction.debtId
+    )
     .reduce((sum, transaction) => sum + Number(transaction.amount), 0)
 
   const lines = [
@@ -299,6 +330,11 @@ export async function getMonthlyFinancialReportForUser(
     '',
     `- **${labels.income}:** ${amount(income)}`,
     `- **${labels.expenses}:** ${amount(expenses)}`,
+    ...(cardPurchases > 0
+      ? [
+          `- **${labels.cardPurchases}:** ${amount(cardPurchases)} (${labels.cardPurchasesNote})`,
+        ]
+      : []),
     `- **${labels.total}:** ${amount(income - expenses)}`,
     '',
     `| ${labels.date} | ${labels.description} | ${labels.category} | ${labels.source} | ${labels.amount} |`,

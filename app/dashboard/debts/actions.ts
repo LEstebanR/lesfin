@@ -1,6 +1,7 @@
 'use server'
 
 import { parseCurrencyInput, parseOptionalCurrencyInput } from '@/lib/currency'
+import { applyDebtPayment, revertDebtPayment } from '@/lib/debt-payments'
 import { FREE_LIMITS, getUserPlan, reconcileDebtLocks } from '@/lib/plan-limits'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from '@/lib/session'
@@ -11,7 +12,6 @@ import {
   uuidField,
   validDate,
 } from '@/lib/validation'
-import { type Prisma } from '@prisma/client'
 import { z } from 'zod'
 
 const debtTypeSchema = z.enum(['loan', 'credit_card'])
@@ -92,8 +92,12 @@ export async function getDebtPayments(debtId: string) {
   const session = await getServerSession()
   if (!session) throw new Error('Not authenticated')
 
+  return getDebtPaymentsForUser(session.user.id, debtId)
+}
+
+export async function getDebtPaymentsForUser(userId: string, debtId: string) {
   const payments = await prisma.debtPayment.findMany({
-    where: { debtId, userId: session.user.id },
+    where: { debtId, userId },
     orderBy: { date: 'desc' },
   })
 
@@ -248,32 +252,11 @@ export async function deleteDebt(id: string) {
   })
 }
 
-// Debt payments are categorized under the same "Deuda" default category the
-// budget's minimum-payment planning uses, so the mirrored Transaction lines
-// up with what's already budgeted for the debt.
-async function getOrCreateDebtCategory(
-  tx: Prisma.TransactionClient,
-  userId: string
-) {
-  const existing = await tx.category.findFirst({
-    where: {
-      userId,
-      type: 'expense',
-      name: { equals: 'Deuda', mode: 'insensitive' },
-    },
-  })
-  if (existing) return existing
-
-  return tx.category.create({
-    data: { userId, name: 'Deuda', type: 'expense', isDefault: true },
-  })
-}
-
 export async function createDebtPayment(formData: FormData) {
   const session = await getServerSession()
   if (!session) throw new Error('Not authenticated')
 
-  const { debtId, accountId, amount, date, note } = debtPaymentSchema.parse({
+  const input = debtPaymentSchema.parse({
     debtId: formData.get('debtId'),
     accountId: formData.get('accountId'),
     amount: parseCurrencyInput(formData.get('amount')),
@@ -281,63 +264,19 @@ export async function createDebtPayment(formData: FormData) {
     note: formData.get('note'),
   })
 
-  const payment = await prisma.$transaction(async (tx) => {
-    const [debt, account] = await Promise.all([
-      tx.debt.findFirstOrThrow({
-        where: { id: debtId, userId: session.user.id },
-      }),
-      tx.account.findFirstOrThrow({
-        where: { id: accountId, userId: session.user.id },
-      }),
-    ])
-    if (debt.userId !== session.user.id || account.userId !== session.user.id) {
-      throw new Error('Not authorized')
-    }
+  return createDebtPaymentForUser(session.user.id, input)
+}
 
-    await tx.account.update({
-      where: { id: accountId },
-      data: { currentBalance: { decrement: amount } },
-    })
-    const updatedDebt = await tx.debt.update({
-      where: { id: debtId },
-      data: { remainingBalance: { decrement: amount } },
-    })
-
-    // Fully paid off: drop this debt's not-yet-arrived planned budget items
-    // (the recurring minimum-payment line) so it stops showing up as a
-    // recurring expense. Past/current entries stay as the historical record
-    // of what was actually planned, same as when editing a debt's terms.
-    if (Number(updatedDebt.remainingBalance) <= 0) {
-      await tx.budgetItem.deleteMany({
-        where: { debtId, date: { gt: new Date() } },
-      })
-    }
-
-    const category = await getOrCreateDebtCategory(tx, session.user.id)
-    const transaction = await tx.transaction.create({
-      data: {
-        userId: session.user.id,
-        accountId,
-        amount,
-        type: 'expense',
-        description: note?.trim() || `Pago: ${debt.name}`,
-        date,
-        categoryId: category.id,
-      },
-    })
-
-    return tx.debtPayment.create({
-      data: {
-        debtId,
-        accountId,
-        userId: session.user.id,
-        amount,
-        date,
-        note,
-        transactionId: transaction.id,
-      },
-    })
-  })
+// Shared by the dashboard and the MCP server, so a payment recorded from
+// either place updates the debt and counts toward totalPaid the same way.
+export async function createDebtPaymentForUser(
+  userId: string,
+  input: z.input<typeof debtPaymentSchema>
+) {
+  const parsed = debtPaymentSchema.parse(input)
+  const payment = await prisma.$transaction((tx) =>
+    applyDebtPayment(tx, userId, parsed)
+  )
 
   return { ...payment, amount: Number(payment.amount) }
 }
@@ -346,25 +285,11 @@ export async function deleteDebtPayment(id: string) {
   const session = await getServerSession()
   if (!session) throw new Error('Not authenticated')
 
-  await prisma.$transaction(async (tx) => {
-    const existing = await tx.debtPayment.findFirstOrThrow({
-      where: { id, userId: session.user.id },
-    })
+  await deleteDebtPaymentForUser(session.user.id, id)
+}
 
-    await tx.account.update({
-      where: { id: existing.accountId },
-      data: { currentBalance: { increment: Number(existing.amount) } },
-    })
-    await tx.debt.update({
-      where: { id: existing.debtId },
-      data: { remainingBalance: { increment: Number(existing.amount) } },
-    })
-
-    await tx.debtPayment.delete({ where: { id } })
-    if (existing.transactionId) {
-      await tx.transaction.delete({ where: { id: existing.transactionId } })
-    }
-  })
+export async function deleteDebtPaymentForUser(userId: string, id: string) {
+  await prisma.$transaction((tx) => revertDebtPayment(tx, userId, id))
 }
 
 export async function createDebtInterestCharge(formData: FormData) {
