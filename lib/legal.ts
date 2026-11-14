@@ -4,10 +4,8 @@ import type { Language } from '@/lib/translations'
 // "[PENDIENTE: …]" is rendered highlighted on /privacy and /terms until the
 // operator fills it in. Grep for PENDIENTE before considering the pages final.
 export const LEGAL_INFO = {
-  operatorName: '[PENDIENTE: nombre legal del responsable]',
-  operatorId: '[PENDIENTE: documento de identidad o NIT]',
-  operatorAddress: '[PENDIENTE: dirección de contacto]',
-  contactEmail: '[PENDIENTE: correo de contacto]',
+  // Personal address for now; replace with a company one once it exists.
+  contactEmail: 'lesteban.dev@gmail.com',
   jurisdiction: '[PENDIENTE: país y ciudad de jurisdicción]',
   refundPolicy: '[PENDIENTE: política de reembolsos]',
   lastUpdated: '2026-11-12',
@@ -32,14 +30,7 @@ export type LegalDocument = {
 
 export type LegalDocumentKind = 'privacy' | 'terms'
 
-const {
-  operatorName,
-  operatorId,
-  operatorAddress,
-  contactEmail,
-  jurisdiction,
-  refundPolicy,
-} = LEGAL_INFO
+const { contactEmail, jurisdiction, refundPolicy } = LEGAL_INFO
 
 const privacyEn: LegalDocument = {
   title: 'Privacy Policy',
@@ -50,7 +41,7 @@ const privacyEn: LegalDocument = {
     {
       heading: 'Who is responsible for your data',
       blocks: [
-        `LESFin (www.lesfin.app) is an independent personal finance app operated by ${operatorName} (${operatorId}), ${operatorAddress}. For anything related to your data, write to ${contactEmail}.`,
+        `LESFin (www.lesfin.app) is an independent personal finance app run by its developer as an individual, not by a company. For anything related to your data, write to ${contactEmail}.`,
       ],
     },
     {
@@ -155,7 +146,7 @@ const privacyEs: LegalDocument = {
     {
       heading: 'Responsable de tus datos',
       blocks: [
-        `LESFin (www.lesfin.app) es una app independiente de finanzas personales operada por ${operatorName} (${operatorId}), ${operatorAddress}. Para cualquier tema relacionado con tus datos, escribe a ${contactEmail}.`,
+        `LESFin (www.lesfin.app) es una app independiente de finanzas personales operada por su desarrollador como persona natural, no por una empresa. Para cualquier tema relacionado con tus datos, escribe a ${contactEmail}.`,
       ],
     },
     {
@@ -260,7 +251,7 @@ const termsEn: LegalDocument = {
     {
       heading: 'Who operates LESFin',
       blocks: [
-        `LESFin (www.lesfin.app) is operated by ${operatorName} (${operatorId}), ${operatorAddress}. Contact: ${contactEmail}.`,
+        `LESFin (www.lesfin.app) is an independent project run by its developer as an individual, not by a company. Contact: ${contactEmail}.`,
       ],
     },
     {
@@ -355,7 +346,7 @@ const termsEs: LegalDocument = {
     {
       heading: 'Quién opera LESFin',
       blocks: [
-        `LESFin (www.lesfin.app) es operada por ${operatorName} (${operatorId}), ${operatorAddress}. Contacto: ${contactEmail}.`,
+        `LESFin (www.lesfin.app) es un proyecto independiente operado por su desarrollador como persona natural, no por una empresa. Contacto: ${contactEmail}.`,
       ],
     },
     {
