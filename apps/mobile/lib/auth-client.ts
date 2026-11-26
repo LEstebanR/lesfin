@@ -2,9 +2,11 @@ import { expoClient } from '@better-auth/expo/client'
 import { createAuthClient } from 'better-auth/react'
 import * as SecureStore from 'expo-secure-store'
 
-const baseURL =
+// Also the base URL of the mobile API (lib/api.ts): same Next.js server.
+export const authBaseURL =
   process.env.EXPO_PUBLIC_AUTH_URL ||
   (__DEV__ ? 'http://localhost:3000' : 'https://www.lesfin.app')
+const baseURL = authBaseURL
 
 // The expo plugin opens the OAuth flow in the system browser, receives the
 // deep link back into the app, and persists the session cookie in SecureStore

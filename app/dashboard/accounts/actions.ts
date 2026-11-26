@@ -59,14 +59,16 @@ export async function getAccounts() {
   return getAccountsForUser(session.user.id)
 }
 
-export async function createAccount(formData: FormData) {
-  const session = await getServerSession()
-  if (!session) throw new Error('Not authenticated')
+export type CreateAccountInput = z.input<typeof createAccountSchema>
 
-  const plan = await getUserPlan(session.user.id)
+export async function createAccountForUser(
+  userId: string,
+  input: CreateAccountInput
+) {
+  const plan = await getUserPlan(userId)
   if (plan !== 'PRO') {
     const activeCount = await prisma.account.count({
-      where: { userId: session.user.id, isArchived: false },
+      where: { userId, isArchived: false },
     })
     if (activeCount >= FREE_LIMITS.accounts) {
       throw new Error(
@@ -83,19 +85,11 @@ export async function createAccount(formData: FormData) {
     color,
     logoUrl,
     icon,
-  } = createAccountSchema.parse({
-    accountName: formData.get('accountName'),
-    accountType: formData.get('accountType'),
-    initialBalance: parseCurrencyInput(formData.get('initialBalance')),
-    description: formData.get('description'),
-    color: formData.get('color'),
-    logoUrl: formData.get('logoUrl'),
-    icon: formData.get('icon'),
-  })
+  } = createAccountSchema.parse(input)
 
   const account = await prisma.account.create({
     data: {
-      userId: session.user.id,
+      userId,
       name: accountName,
       type: accountType,
       initialBalance,
@@ -112,6 +106,23 @@ export async function createAccount(formData: FormData) {
     initialBalance: Number(account.initialBalance),
     currentBalance: Number(account.currentBalance),
   }
+}
+
+export async function createAccount(formData: FormData) {
+  const session = await getServerSession()
+  if (!session) throw new Error('Not authenticated')
+
+  return createAccountForUser(session.user.id, {
+    accountName: formData.get('accountName') as string,
+    accountType: formData.get('accountType') as z.infer<
+      typeof accountTypeSchema
+    >,
+    initialBalance: parseCurrencyInput(formData.get('initialBalance')),
+    description: formData.get('description') as string | null,
+    color: formData.get('color') as string | null,
+    logoUrl: formData.get('logoUrl') as string | null,
+    icon: formData.get('icon') as string | null,
+  })
 }
 
 // Uploaded logos are stored publicly and referenced directly by the account.
@@ -134,6 +145,40 @@ export async function uploadAccountLogo(formData: FormData) {
   return blob.url
 }
 
+export type AccountPatch = Partial<z.input<typeof updateAccountSchema>>
+
+// Partial update: any field left out of `patch` keeps its current value.
+export async function updateAccountForUser(
+  userId: string,
+  id: string,
+  patch: AccountPatch
+) {
+  const existing = await prisma.account.findFirstOrThrow({
+    where: { id, userId },
+  })
+
+  const validated = updateAccountSchema.parse({
+    name: patch.name ?? existing.name,
+    type: patch.type ?? existing.type,
+    description:
+      'description' in patch ? patch.description : existing.description,
+    color: 'color' in patch ? patch.color : existing.color,
+    logoUrl: 'logoUrl' in patch ? patch.logoUrl : existing.logoUrl,
+    icon: 'icon' in patch ? patch.icon : existing.icon,
+  })
+
+  const account = await prisma.account.update({
+    where: { id },
+    data: validated,
+  })
+
+  return {
+    ...account,
+    initialBalance: Number(account.initialBalance),
+    currentBalance: Number(account.currentBalance),
+  }
+}
+
 export async function updateAccount(
   id: string,
   data: {
@@ -148,20 +193,9 @@ export async function updateAccount(
   const session = await getServerSession()
   if (!session) throw new Error('Not authenticated')
 
-  const validated = updateAccountSchema.parse(data)
-
-  await prisma.account.findFirstOrThrow({
-    where: { id, userId: session.user.id },
-  })
-
-  const account = await prisma.account.update({
-    where: { id },
-    data: validated,
-  })
-
-  return {
-    ...account,
-    initialBalance: Number(account.initialBalance),
-    currentBalance: Number(account.currentBalance),
-  }
+  return updateAccountForUser(
+    session.user.id,
+    id,
+    updateAccountSchema.parse(data)
+  )
 }
