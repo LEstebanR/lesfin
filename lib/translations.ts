@@ -712,6 +712,53 @@ export const translations = {
       totalPaid: 'Total paid',
       totalInterest: 'Total interest',
       totalPurchases: 'Total purchases',
+      interestRate: 'Interest rate (%)',
+      interestRateType: 'Rate type',
+      interestRateHint:
+        'Optional. Used to suggest monthly interest and project the payoff.',
+      rateType_effective_annual: 'Effective annual (EA)',
+      rateType_nominal_annual: 'Nominal annual (monthly)',
+      rateType_monthly: 'Monthly (MV)',
+      interestSource: 'Source',
+      source_manual: 'Manual',
+      source_statement: 'Statement',
+      source_estimated: 'Estimated',
+      suggestedInterest: 'Suggested from the rate: ${amount}',
+      useSuggestion: 'Use',
+      interestPeriodTaken:
+        'This month already has an interest charge. Edit that one instead.',
+      interestPeriodHint: 'One charge per month.',
+      editInterest: 'Edit interest',
+      editInterestDesc:
+        'The debt balance moves by the difference with the previous amount.',
+      interestUpdated: 'Interest updated',
+      deleteInterest: 'Delete interest',
+      deleteInterestConfirmTitle: 'Delete this interest charge?',
+      deleteInterestConfirmDescription:
+        'The debt balance goes down by its amount. This action cannot be undone.',
+      interestDeleted: 'Interest deleted',
+      interestDeleteFailed: 'Failed to delete the interest. Please try again.',
+      paidOffNoInterest:
+        'This debt is paid off; it no longer accrues interest.',
+      principal: 'Principal',
+      principalDesc: 'Opening balance + purchases',
+      balance: 'Balance',
+      noRate: 'No interest rate',
+      rateSummary: '{rate}% {type} · {monthly}% monthly',
+      lastInterest: 'Last interest: {period}',
+      projection: 'Payoff projection',
+      projection_ok:
+        'Paid off in {months} months ({date}) paying the minimum, with about ${interest} more in interest.',
+      projection_never:
+        "The minimum payment doesn't cover the monthly interest (${interest}): the debt won't go down.",
+      projection_no_rate: 'Add an interest rate to see a projection.',
+      projection_no_payment: 'Add a minimum payment to see a projection.',
+      projection_too_long: 'Takes more than 50 years paying the minimum.',
+      projection_paid_off: 'Paid off.',
+      projectionNote:
+        'Estimate: assumes the same rate, no new purchases and paying the minimum each month.',
+      ledgerDrift:
+        'The stored balance (${stored}) differs by ${drift} from the balance rebuilt from the movements (${rebuilt}).',
     },
     subscriptions: {
       title: 'Subscriptions',
@@ -1461,6 +1508,53 @@ export const translations = {
       totalPaid: 'Total pagado',
       totalInterest: 'Total intereses',
       totalPurchases: 'Total compras',
+      interestRate: 'Tasa de interés (%)',
+      interestRateType: 'Tipo de tasa',
+      interestRateHint:
+        'Opcional. Se usa para sugerir el interés mensual y proyectar el pago.',
+      rateType_effective_annual: 'Efectiva anual (EA)',
+      rateType_nominal_annual: 'Nominal anual (mes vencido)',
+      rateType_monthly: 'Mensual (MV)',
+      interestSource: 'Fuente',
+      source_manual: 'Manual',
+      source_statement: 'Extracto',
+      source_estimated: 'Estimado',
+      suggestedInterest: 'Sugerido según la tasa: ${amount}',
+      useSuggestion: 'Usar',
+      interestPeriodTaken:
+        'Este mes ya tiene un interés registrado. Edita ese en su lugar.',
+      interestPeriodHint: 'Un solo interés por mes.',
+      editInterest: 'Editar interés',
+      editInterestDesc:
+        'El saldo de la deuda se mueve por la diferencia con el monto anterior.',
+      interestUpdated: 'Interés actualizado',
+      deleteInterest: 'Eliminar interés',
+      deleteInterestConfirmTitle: '¿Eliminar este interés?',
+      deleteInterestConfirmDescription:
+        'El saldo de la deuda baja en su monto. Esta acción no se puede deshacer.',
+      interestDeleted: 'Interés eliminado',
+      interestDeleteFailed:
+        'No se pudo eliminar el interés. Intentar de nuevo.',
+      paidOffNoInterest: 'Esta deuda está pagada; ya no genera intereses.',
+      principal: 'Capital',
+      principalDesc: 'Saldo inicial + compras',
+      balance: 'Saldo',
+      noRate: 'Sin tasa de interés',
+      rateSummary: '{rate}% {type} · {monthly}% mensual',
+      lastInterest: 'Último interés: {period}',
+      projection: 'Proyección de pago',
+      projection_ok:
+        'Se paga en {months} meses ({date}) pagando el mínimo, con unos ${interest} más en intereses.',
+      projection_never:
+        'El pago mínimo no cubre el interés mensual (${interest}): la deuda no baja.',
+      projection_no_rate: 'Agrega una tasa de interés para ver la proyección.',
+      projection_no_payment: 'Agrega un pago mínimo para ver la proyección.',
+      projection_too_long: 'Tarda más de 50 años pagando el mínimo.',
+      projection_paid_off: 'Pagada.',
+      projectionNote:
+        'Estimación: supone la misma tasa, sin compras nuevas y pagando el mínimo cada mes.',
+      ledgerDrift:
+        'El saldo guardado (${stored}) difiere en ${drift} del saldo reconstruido con los movimientos (${rebuilt}).',
     },
     subscriptions: {
       title: 'Suscripciones',

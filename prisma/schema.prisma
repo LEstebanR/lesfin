@@ -368,6 +368,12 @@ model Debt {
   creditLimit      Decimal?             @db.Decimal(15, 2)
   minimumPayment   Decimal?             @db.Decimal(15, 2)
   paymentDueDay    Int?
+  // Interest terms (see lib/debt-interest.ts for the conventions). The rate
+  // is a fraction (0.245 = 24.5%); its type says how to turn it into the
+  // monthly rate used for suggestions and payoff projections.
+  interestRate     Decimal?             @db.Decimal(9, 6)
+  interestRateType String? // 'effective_annual' | 'nominal_annual' | 'monthly'
+  accrualFrequency String? // 'monthly'
   lockedByPlan     Boolean              @default(false)
   createdAt        DateTime             @default(now())
   user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -403,19 +409,24 @@ model DebtPayment {
   @@index([userId])
 }
 
-// Interest accrued on a debt: increases remainingBalance without touching
-// originalAmount, keeping a separate record from principal payments so the
-// two can be told apart later.
+// Interest accrued on a debt (an accrual event): increases remainingBalance
+// without touching originalAmount or totalPaid, and is never mirrored as an
+// expense Transaction. One charge per debt and period ('YYYY-MM', derived
+// from date), so recording the same month twice can't double-count it.
 model DebtInterestCharge {
   id        String   @id @default(uuid())
   debtId    String
   userId    String
   amount    Decimal  @db.Decimal(15, 2)
   date      DateTime
+  period    String
+  source    String   @default("manual") // 'manual' | 'statement' | 'estimated'
   note      String?
   createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
   debt      Debt     @relation(fields: [debtId], references: [id], onDelete: Cascade)
 
+  @@unique([debtId, period])
   @@index([debtId])
   @@index([userId])
 }
