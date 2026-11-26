@@ -6,6 +6,7 @@ import {
 import {
   type BillingEventResult,
   type PolarCustomerStateData,
+  type PolarOrderData,
   type PolarSubscriptionData,
   applyBillingEvent,
 } from '@/lib/polar-webhook'
@@ -70,8 +71,15 @@ async function processWebhookEvent({
     return 'processed' as const
   } catch (error) {
     // A concurrent retry may win the unique insert. It is safe to acknowledge
-    // it because the winning transaction owns the event effect.
-    if (isUniqueConstraintError(error)) return 'duplicate' as const
+    // it because the winning transaction owns the event effect. Any other
+    // unique violation is a real failure and must return 500 so Polar retries.
+    if (isUniqueConstraintError(error)) {
+      const winner = await prisma.billingWebhookEvent.findUnique({
+        where: { eventId },
+        select: { id: true },
+      })
+      if (winner) return 'duplicate' as const
+    }
     throw error
   }
 }
@@ -109,7 +117,8 @@ export async function POST(request: Request) {
 
   const isSubscriptionEvent = event.type.startsWith('subscription.')
   const isCustomerStateEvent = event.type === 'customer.state_changed'
-  if (!isSubscriptionEvent && !isCustomerStateEvent) {
+  const isRefundEvent = event.type === 'order.refunded'
+  if (!isSubscriptionEvent && !isCustomerStateEvent && !isRefundEvent) {
     billingLog('info', 'webhook.ignored', {
       correlationId,
       provider: 'polar',
@@ -139,7 +148,8 @@ export async function POST(request: Request) {
           eventType: event.type,
           data: event.data as unknown as
             | PolarSubscriptionData
-            | PolarCustomerStateData,
+            | PolarCustomerStateData
+            | PolarOrderData,
           productId: process.env.POLAR_PRO_PRODUCT_ID,
         })
       },
@@ -158,6 +168,7 @@ export async function POST(request: Request) {
       eventId,
       eventType: event.type,
       provider: 'polar',
+      outcome,
     })
     return jsonResponse(
       { ok: true, duplicate: result === 'duplicate' },
