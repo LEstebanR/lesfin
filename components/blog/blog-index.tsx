@@ -5,6 +5,7 @@ import { Reveal } from '@/components/marketing/reveal'
 import { Footer } from '@/components/ui/footer'
 import { Header } from '@/components/ui/header'
 import type { BlogPostMeta } from '@/lib/blog'
+import { formatPostDate } from '@/lib/blog-date'
 import { ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 
@@ -54,11 +55,8 @@ export function BlogIndex({
                   >
                     <div>
                       <p className="text-muted-foreground mb-2 text-sm">
-                        {new Date(post.date).toLocaleDateString(
-                          language === 'es' ? 'es-ES' : 'en-US',
-                          { year: 'numeric', month: 'long', day: 'numeric' }
-                        )}{' '}
-                        · {t('blog.minRead', { minutes: post.readingMinutes })}
+                        {formatPostDate(post.date, language)} ·{' '}
+                        {t('blog.minRead', { minutes: post.readingMinutes })}
                       </p>
                       <h2 className="text-xl font-black tracking-tight sm:text-2xl">
                         {post.title}
