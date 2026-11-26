@@ -3,7 +3,7 @@
 import { updateAccount } from '@/app/dashboard/accounts/actions'
 import { useLanguage } from '@/components/language-provider'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Loader } from 'lucide-react'
+import { Archive, Loader, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
@@ -18,6 +18,10 @@ import { SelectField } from '../ui/select-field'
 import { TextField } from '../ui/text-field'
 import { Textarea } from '../ui/textarea'
 import { AccountAppearancePicker } from './account-appearance-picker'
+import {
+  AccountLifecycleDialog,
+  type AccountLifecycleMode,
+} from './account-lifecycle-dialog'
 import { useDashboardRefresh } from './refresh-provider'
 
 interface Account {
@@ -48,6 +52,8 @@ export function EditAccountDialog({
   )
   const [icon, setIcon] = useState<string | null>(account?.icon ?? null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [lifecycleMode, setLifecycleMode] =
+    useState<AccountLifecycleMode | null>(null)
 
   const schema = z.object({
     name: z.string().trim().min(1, t('accounts.accountNameRequired')),
@@ -145,9 +151,37 @@ export function EditAccountDialog({
                 t('accounts.saveChanges')
               )}
             </Button>
+            <div className="flex gap-2 border-t pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={() => setLifecycleMode('archive')}
+              >
+                <Archive className="h-4 w-4" />
+                {t('accounts.archive')}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="text-destructive hover:text-destructive flex-1"
+                onClick={() => setLifecycleMode('delete')}
+              >
+                <Trash2 className="h-4 w-4" />
+                {t('accounts.delete')}
+              </Button>
+            </div>
           </form>
         </Form>
       </DialogContent>
+      <AccountLifecycleDialog
+        account={account}
+        mode={lifecycleMode}
+        onOpenChange={(open) => {
+          if (!open) setLifecycleMode(null)
+        }}
+        onDone={() => onOpenChange(false)}
+      />
     </Dialog>
   )
 }

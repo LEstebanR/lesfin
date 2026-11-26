@@ -1,5 +1,6 @@
 'use client'
 
+import { restoreAccount } from '@/app/dashboard/accounts/actions'
 import { useCurrency } from '@/components/currency-provider'
 import { useLanguage } from '@/components/language-provider'
 import { getAccountIcon } from '@/lib/account-icons'
@@ -7,21 +8,29 @@ import { formatMoney } from '@/lib/currency'
 import { useAccounts } from '@/lib/queries'
 import { cn } from '@/lib/utils'
 import {
+  ArchiveRestore,
   ArrowUpRight,
   Lock,
   Pencil,
   PiggyBank,
   PlusIcon,
+  Trash2,
   Wallet,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
+import { toast } from 'sonner'
 
 import { Button } from '../ui/button'
 import { Loader } from '../ui/loader'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
+import {
+  AccountLifecycleDialog,
+  accountLifecycleErrorKey,
+} from './account-lifecycle-dialog'
 import { AddAccountDialog } from './add-account-dialog'
 import { EditAccountDialog } from './edit-account-dialog'
+import { useDashboardRefresh } from './refresh-provider'
 
 interface Account {
   id: string
@@ -42,11 +51,36 @@ export function Accounts() {
   const currency = useCurrency()
   const { t } = useLanguage()
   const { data: accounts = [], isLoading: loading } = useAccounts()
+  const { triggerRefresh } = useDashboardRefresh()
   const [editingAccount, setEditingAccount] = useState<Account | null>(null)
+  const [deletingAccount, setDeletingAccount] = useState<Account | null>(null)
+  const [restoringId, setRestoringId] = useState<string | null>(null)
+
+  const activeAccounts = accounts.filter((a) => !a.isArchived)
+  const archivedAccounts = accounts.filter((a) => a.isArchived)
+
+  const handleRestore = async (account: Account) => {
+    setRestoringId(account.id)
+    try {
+      const result = await restoreAccount(account.id)
+      if (result.ok) {
+        toast.success(t('accounts.accountRestored'))
+        triggerRefresh()
+      } else {
+        toast.error(t(accountLifecycleErrorKey(result.error)))
+      }
+    } catch (error) {
+      console.error('Error restoring account:', error)
+      toast.error(t('accounts.lifecycleFailed'))
+    }
+    setRestoringId(null)
+  }
 
   const filterAccountsByType = (type: 'all' | 'cash' | 'savings' | 'caja') => {
     const filtered =
-      type === 'all' ? accounts : accounts.filter((a) => a.type === type)
+      type === 'all'
+        ? activeAccounts
+        : activeAccounts.filter((a) => a.type === type)
     return [...filtered].sort((a, b) => b.currentBalance - a.currentBalance)
   }
 
@@ -202,13 +236,13 @@ export function Accounts() {
       <div className="mt-6 w-full">
         {loading ? (
           <Loader className="m-auto" />
-        ) : accounts.length === 0 ? (
+        ) : activeAccounts.length === 0 ? (
           <EmptyState type="all" />
         ) : (
           <Tabs defaultValue="all" className="w-full">
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="all">
-                {t('accounts.all')} ({accounts.length})
+                {t('accounts.all')} ({activeAccounts.length})
               </TabsTrigger>
               <TabsTrigger value="cash">
                 {t('accounts.cash')} ({filterAccountsByType('cash').length})
@@ -268,6 +302,61 @@ export function Accounts() {
           </Tabs>
         )}
       </div>
+
+      {archivedAccounts.length > 0 && (
+        <section className="mt-10 w-full">
+          <h2 className="text-lg font-semibold">{t('accounts.archived')}</h2>
+          <p className="text-muted-foreground mb-4 text-sm">
+            {t('accounts.archivedDesc')}
+          </p>
+          <ul className="divide-y rounded-2xl border">
+            {archivedAccounts.map((account) => (
+              <li
+                key={account.id}
+                className="flex items-center justify-between gap-4 p-4"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold">
+                    {account.name}
+                  </p>
+                  <p className="text-muted-foreground text-xs">
+                    {getAccountTypeMeta(account.type).label} · $
+                    {formatMoney(Number(account.currentBalance), currency)}
+                  </p>
+                </div>
+                <div className="flex shrink-0 gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={restoringId === account.id}
+                    onClick={() => handleRestore(account)}
+                  >
+                    <ArchiveRestore className="h-4 w-4" />
+                    {t('accounts.restore')}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => setDeletingAccount(account)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    {t('accounts.delete')}
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <AccountLifecycleDialog
+        account={deletingAccount}
+        mode={deletingAccount ? 'delete' : null}
+        onOpenChange={(open) => {
+          if (!open) setDeletingAccount(null)
+        }}
+      />
 
       <EditAccountDialog
         account={editingAccount}
