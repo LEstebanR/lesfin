@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons'
 import { StatusBar } from 'expo-status-bar'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Alert,
   KeyboardAvoidingView,
@@ -15,6 +15,7 @@ import {
 } from 'react-native'
 
 import { Logo } from '../../components/logo'
+import { api } from '../../lib/api'
 import { useAuth } from '../../lib/auth-context'
 import { colors, fonts } from '../../lib/theme'
 
@@ -34,6 +35,7 @@ type Transaction = {
 }
 
 type Account = {
+  id: string
   name: string
   type: string
   balance: number
@@ -55,29 +57,16 @@ const C = {
   orange: colors.chart4,
 }
 
-const initialAccounts: Account[] = [
-  {
-    name: 'Efectivo',
-    type: 'Cash',
-    balance: 1250000,
-    color: C.green,
-    icon: 'wallet-outline',
-  },
-  {
-    name: 'Ahorros',
-    type: 'Savings',
-    balance: 4850000,
-    color: C.blue,
-    icon: 'trending-up-outline',
-  },
-  {
-    name: 'Caja menor',
-    type: 'Caja',
-    balance: 320000,
-    color: C.orange,
-    icon: 'lock-closed-outline',
-  },
-]
+// Real accounts from the API (#18 smoke); everything else on this screen is
+// still mock data until #19–#21.
+const ACCOUNT_STYLE: Record<
+  string,
+  { label: string; color: string; icon: IconName }
+> = {
+  cash: { label: 'Cash', color: C.green, icon: 'wallet-outline' },
+  savings: { label: 'Savings', color: C.blue, icon: 'trending-up-outline' },
+  caja: { label: 'Caja', color: C.orange, icon: 'lock-closed-outline' },
+}
 
 const initialTransactions: Transaction[] = [
   {
@@ -310,7 +299,7 @@ function Home({
         contentContainerStyle={styles.horizontal}
       >
         {accounts.map((a) => (
-          <View key={a.name} style={styles.miniAccount}>
+          <View key={a.id} style={styles.miniAccount}>
             <View
               style={[styles.miniIcon, { backgroundColor: `${a.color}22` }]}
             >
@@ -452,7 +441,7 @@ function Accounts({ accounts, add }: { accounts: Account[]; add: () => void }) {
         <Text style={styles.segmentText}>Ahorros</Text>
       </View>
       {accounts.map((a) => (
-        <View key={a.name} style={styles.accountCard}>
+        <View key={a.id} style={styles.accountCard}>
           <View style={[styles.largeIcon, { backgroundColor: a.color }]}>
             <Icon color="#fff" name={a.icon} size={25} />
           </View>
@@ -705,23 +694,47 @@ function AddModal({
 
 export default function MobileHome() {
   const [tab, setTab] = useState<Tab>('home')
-  const [accounts, setAccounts] = useState(initialAccounts)
+  const [accounts, setAccounts] = useState<Account[]>([])
   const [transactions, setTransactions] = useState(initialTransactions)
   const [modal, setModal] = useState(false)
   const { signOut } = useAuth()
 
+  useEffect(() => {
+    let active = true
+    api
+      .accounts()
+      .then((real) => {
+        if (!active) return
+        setAccounts(
+          real
+            .filter((a) => !a.isArchived)
+            .map((a) => {
+              const style = ACCOUNT_STYLE[a.type] ?? ACCOUNT_STYLE.cash
+              return {
+                id: a.id,
+                name: a.name,
+                type: style.label,
+                balance: a.currentBalance,
+                color: a.color ?? style.color,
+                icon: style.icon,
+              }
+            })
+        )
+      })
+      .catch((error: Error) => {
+        // 401 already sends the user back to login (lib/api.ts).
+        if (active)
+          Alert.alert('No se pudieron cargar tus cuentas', error.message)
+      })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  // The add form is still a mock (#19–#21): it only adds to the local mock
+  // list and never touches the real account balances loaded from the API.
   const add = (t: Transaction) => {
     setTransactions((all) => [t, ...all])
-    setAccounts((all) =>
-      all.map((a, i) =>
-        i === 0
-          ? {
-              ...a,
-              balance: a.balance + (t.kind === 'income' ? t.amount : -t.amount),
-            }
-          : a
-      )
-    )
   }
 
   const handleLogout = () => {

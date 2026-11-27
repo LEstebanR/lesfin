@@ -1,6 +1,6 @@
 'use server'
 
-import { syncDefaultCategoriesForUser } from '@/app/dashboard/categories/actions'
+import { syncDefaultCategoriesForUser } from '@/app/dashboard/categories/domain'
 import { getUserPlan } from '@/lib/plan-limits'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from '@/lib/session'
