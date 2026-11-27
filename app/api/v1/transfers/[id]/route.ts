@@ -1,7 +1,7 @@
 import {
   deleteTransferForUser,
   updateTransferForUser,
-} from '@/app/dashboard/transactions/actions'
+} from '@/app/dashboard/transactions/domain'
 import { noContent, readJson, withApiUser } from '@/lib/api/http'
 import { updateTransferBody } from '@/lib/api/schemas'
 

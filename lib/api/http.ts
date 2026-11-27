@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth'
+import { BusinessRuleError } from '@/lib/errors'
 import { Prisma } from '@prisma/client'
 import { ZodError } from 'zod'
 
@@ -46,11 +47,10 @@ function zodDetails(error: ZodError) {
 }
 
 // Maps anything thrown by a handler (or the domain `*ForUser` functions it
-// calls) to the public error contract. Domain functions throw plain `Error`s
-// for business rules (plan limits, blocked "Deuda" category, debt-payment
-// mirrors) — those messages are meant for the user, same as in the MCP
-// server, so they pass through as BUSINESS_RULE. Prisma/other failures are
-// logged and replaced by a generic message so internals never leak.
+// calls) to the public error contract. Only `BusinessRuleError` (plan
+// limits, blocked "Deuda" category, debt-payment mirrors) carries a
+// user-facing message; everything else — Prisma, driver, library errors,
+// internal guards — is logged and replaced by a generic 500.
 export function toErrorResponse(error: unknown) {
   if (error instanceof ApiError) {
     return errorResponse(error.code, error.message, error.details)
@@ -74,12 +74,7 @@ export function toErrorResponse(error: unknown) {
     )
   }
 
-  // Only a plain `new Error(...)` counts as a business rule; subclasses
-  // (Prisma errors, TypeError, …) are bugs or infra failures.
-  if (
-    error instanceof Error &&
-    Object.getPrototypeOf(error) === Error.prototype
-  ) {
+  if (error instanceof BusinessRuleError) {
     return errorResponse('BUSINESS_RULE', error.message)
   }
 
@@ -129,13 +124,13 @@ export function withApiUser<P = Record<string, never>>(
   handler: ApiHandler<P>,
   resolveUserId: SessionResolver = resolveSessionUserId
 ) {
-  return async (request: Request, context?: RouteContext<P>) => {
+  return async (request: Request, context: RouteContext<P>) => {
     try {
       const userId = await resolveUserId(request.headers)
       if (!userId) {
         return errorResponse('UNAUTHENTICATED', 'Sign in to continue.')
       }
-      const params = (await context?.params) ?? ({} as P)
+      const params = await context.params
       const result = await handler({ request, userId, params })
       if (result instanceof Response) return result
       return Response.json(result ?? null)

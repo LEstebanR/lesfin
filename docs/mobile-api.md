@@ -2,7 +2,7 @@
 
 Authenticated REST API for the Expo app (`apps/mobile`). It wraps the same
 domain functions the web Server Actions and the MCP server use
-(`app/dashboard/*/actions.ts` → `*ForUser(userId, …)`), so business rules
+(`app/dashboard/*/domain.ts` → `*ForUser(userId, …)`), so business rules
 (plan limits, balance updates in `prisma.$transaction`, the blocked "Deuda"
 category, debt-payment mirrors) live in one place.
 
@@ -44,18 +44,18 @@ Every non-2xx response has the same body:
 }
 ```
 
-| Status | `code`                   | When                                                                                       |
-| ------ | ------------------------ | ------------------------------------------------------------------------------------------ |
-| 400    | `VALIDATION_ERROR`       | Bad body/query, malformed JSON. `details` maps field path → messages.                      |
-| 401    | `UNAUTHENTICATED`        | No/expired session. The app should send the user to login.                                 |
-| 404    | `NOT_FOUND`              | The id doesn't exist or isn't yours.                                                       |
-| 415    | `UNSUPPORTED_MEDIA_TYPE` | Mutation without `Content-Type: application/json`.                                         |
-| 422    | `BUSINESS_RULE`          | A domain rule refused it (Free plan limit, "Deuda" category, …). `message` is user-facing. |
-| 500    | `INTERNAL`               | Anything else. Generic message; details are only in server logs.                           |
+| Status | `code`                   | When                                                                                                                                 |
+| ------ | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| 400    | `VALIDATION_ERROR`       | Bad body/query, malformed JSON. `details` maps field path → messages.                                                                |
+| 401    | `UNAUTHENTICATED`        | No/expired session. The app should send the user to login.                                                                           |
+| 404    | `NOT_FOUND`              | The id doesn't exist or isn't yours.                                                                                                 |
+| 415    | `UNSUPPORTED_MEDIA_TYPE` | Mutation without `Content-Type: application/json`.                                                                                   |
+| 422    | `BUSINESS_RULE`          | A domain rule refused it (`BusinessRuleError`: Free plan limit, plan-locked account, "Deuda" category, …). `message` is user-facing. |
+| 500    | `INTERNAL`               | Anything else. Generic message; details are only in server logs.                                                                     |
 
 ## Conventions
 
-- Dates are ISO 8601 strings. Inputs accept `YYYY-MM-DD` or a full datetime.
+- Dates are ISO 8601 strings. Inputs accept exactly `YYYY-MM-DD` (stored as UTC midnight) or a full ISO 8601 datetime with offset (`Z` or `±hh:mm`); anything else → 400.
 - Amounts are numbers (never strings / Decimal).
 - `PATCH` is partial: omitted fields keep their value; unknown fields → 400.
 - `DELETE` returns `204` with no body. `POST` returns `201` with the created record.
@@ -78,13 +78,20 @@ Every non-2xx response has the same body:
 | PATCH  | `/api/v1/transfers/:id`    | `UpdateTransferBody`                       | `TransferDto`                                              |
 | DELETE | `/api/v1/transfers/:id`    | —                                          | `204`                                                      |
 
+Accounts and credit cards with `lockedByPlan: true` can't be the source of a
+new or edited transaction/transfer (422). A `subcategoryId` must be yours and
+belong to the given `categoryId` (404 otherwise).
+
 Transactions mirroring a debt payment can't be edited/deleted here (422);
 change them from the debt.
 
 ## Adding an endpoint
 
 1. Put the logic in a `*ForUser(userId, …)` function in the feature's
-   `actions.ts` (the web action calls it too).
+   `domain.ts` — never in `actions.ts`: every export of a `'use server'`
+   module can become a Server Action, and these functions trust the
+   `userId` argument. The web action calls it with the session's userId.
+   Throw `BusinessRuleError` (`lib/errors.ts`) for user-facing refusals.
 2. Add a route under `app/api/v1/` wrapped in `withApiUser` from
    `lib/api/http.ts`; parse the body with a schema in `lib/api/schemas.ts`.
 3. Add the DTO/body types to `contracts.ts`, a check in `contracts.check.ts`,

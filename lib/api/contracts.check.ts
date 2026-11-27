@@ -1,14 +1,14 @@
 // Compile-time only: fails `bun run typecheck` if what a domain function
 // returns (after JSON serialization) stops matching the public contract in
 // ./contracts.ts. Nothing here runs.
-import type { getAccountsForUser } from '@/app/dashboard/accounts/actions'
-import type { getCategoriesForUser } from '@/app/dashboard/categories/actions'
-import type { getOverviewDataForUser } from '@/app/dashboard/overview/actions'
+import type { getAccountsForUser } from '@/app/dashboard/accounts/domain'
+import type { getCategoriesForUser } from '@/app/dashboard/categories/domain'
+import type { getOverviewDataForUser } from '@/app/dashboard/overview/domain'
 import type {
   createTransactionForUser,
   getTransactionsForUser,
   getTransfersForUser,
-} from '@/app/dashboard/transactions/actions'
+} from '@/app/dashboard/transactions/domain'
 
 import type {
   AccountDto,

@@ -6,10 +6,12 @@ import { z } from 'zod'
 // shared schemas (transactionSchema, transferSchema, account schemas) those
 // functions already apply.
 
+// `YYYY-MM-DD` (stored as UTC midnight, same as the web form) or a full
+// ISO 8601 datetime with timezone. Anything `new Date` would merely guess
+// at ('5', 'Nov 5', '2026') is rejected.
 const isoDate = z
-  .string()
-  .refine((value) => !Number.isNaN(new Date(value).getTime()), {
-    message: 'Invalid date',
+  .union([z.iso.date(), z.iso.datetime({ offset: true })], {
+    error: 'Expected YYYY-MM-DD or an ISO 8601 datetime',
   })
   .transform((value) => new Date(value))
 

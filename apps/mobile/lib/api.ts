@@ -2,6 +2,7 @@
 // docs/mobile-api.md). Type-only import: the contract file has no runtime
 // code, so nothing from the web app ends up in the bundle.
 import type {
+  AccountDto,
   ApiErrorBody,
   ApiErrorCode,
   OverviewDto,
@@ -65,4 +66,5 @@ async function request<T>(
 
 export const api = {
   overview: () => request<OverviewDto>('/overview'),
+  accounts: () => request<AccountDto[]>('/accounts'),
 }

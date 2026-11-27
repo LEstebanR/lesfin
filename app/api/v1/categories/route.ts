@@ -1,4 +1,4 @@
-import { getCategoriesForUser } from '@/app/dashboard/categories/actions'
+import { getCategoriesForUser } from '@/app/dashboard/categories/domain'
 import { withApiUser } from '@/lib/api/http'
 import { categoryListQuery, searchParamsObject } from '@/lib/api/schemas'
 

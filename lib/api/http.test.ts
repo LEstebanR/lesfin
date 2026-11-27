@@ -2,10 +2,13 @@ import { Prisma } from '@prisma/client'
 import { describe, expect, it } from 'bun:test'
 import { z } from 'zod'
 
+import { BusinessRuleError } from '../errors'
 import { ApiError, readJson, toErrorResponse, withApiUser } from './http'
 
 const signedIn = async () => 'user-1'
 const signedOut = async () => null
+// What Next passes to a route without dynamic segments.
+const noParams = { params: Promise.resolve({}) }
 
 function jsonRequest(body: unknown, contentType = 'application/json') {
   return new Request('http://localhost/api/v1/x', {
@@ -23,7 +26,10 @@ describe('withApiUser', () => {
       return {}
     }, signedOut)
 
-    const res = await handler(new Request('http://localhost/api/v1/x'))
+    const res = await handler(
+      new Request('http://localhost/api/v1/x'),
+      noParams
+    )
 
     expect(res.status).toBe(401)
     expect(await res.json()).toEqual({
@@ -38,7 +44,10 @@ describe('withApiUser', () => {
       signedIn
     )
 
-    const res = await handler(new Request('http://localhost/api/v1/x'))
+    const res = await handler(
+      new Request('http://localhost/api/v1/x'),
+      noParams
+    )
 
     expect(res.status).toBe(200)
     expect(await res.json()).toEqual({
@@ -66,7 +75,10 @@ describe('withApiUser', () => {
       signedIn
     )
 
-    const res = await handler(new Request('http://localhost/api/v1/x'))
+    const res = await handler(
+      new Request('http://localhost/api/v1/x'),
+      noParams
+    )
 
     expect(res.status).toBe(204)
   })
@@ -98,7 +110,7 @@ describe('toErrorResponse', () => {
 
   it('passes domain rule messages through as 422', async () => {
     const res = toErrorResponse(
-      new Error('Free plan is limited to 3 accounts.')
+      new BusinessRuleError('Free plan is limited to 3 accounts.')
     )
 
     expect(res.status).toBe(422)
@@ -110,7 +122,7 @@ describe('toErrorResponse', () => {
     })
   })
 
-  it('hides other Prisma errors and runtime bugs behind a generic 500', async () => {
+  it('hides Prisma, library and runtime errors behind a generic 500', async () => {
     const original = console.error
     console.error = () => {}
     try {
@@ -118,7 +130,12 @@ describe('toErrorResponse', () => {
         'Unique constraint failed on secret_column',
         { code: 'P2002', clientVersion: 'test' }
       )
-      for (const error of [prismaError, new TypeError('x is undefined')]) {
+      for (const error of [
+        prismaError,
+        new TypeError('x is undefined'),
+        // A plain Error from a library/driver is not a business rule.
+        new Error('connection terminated unexpectedly'),
+      ]) {
         const res = toErrorResponse(error)
         expect(res.status).toBe(500)
         expect(await res.json()).toEqual({

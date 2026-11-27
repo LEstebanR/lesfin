@@ -1,4 +1,4 @@
-import { updateAccountForUser } from '@/app/dashboard/accounts/actions'
+import { updateAccountForUser } from '@/app/dashboard/accounts/domain'
 import { readJson, withApiUser } from '@/lib/api/http'
 import { updateAccountBody } from '@/lib/api/schemas'
 

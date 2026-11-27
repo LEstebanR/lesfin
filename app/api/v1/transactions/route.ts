@@ -1,7 +1,7 @@
 import {
   createTransactionForUser,
   getTransactionsForUser,
-} from '@/app/dashboard/transactions/actions'
+} from '@/app/dashboard/transactions/domain'
 import { transactionSchema } from '@/app/dashboard/transactions/schemas'
 import { readJson, withApiUser } from '@/lib/api/http'
 import {

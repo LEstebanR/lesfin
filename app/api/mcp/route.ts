@@ -1,31 +1,31 @@
-import { getAccountsForUser } from '@/app/dashboard/accounts/actions'
+import { getAccountsForUser } from '@/app/dashboard/accounts/domain'
 import {
   getBudgetOverviewForUser,
   getCashRunwayForUser,
   getDailyFinancialAgendaForUser,
   getDuePaymentsForUser,
-} from '@/app/dashboard/budgets/actions'
+} from '@/app/dashboard/budgets/domain'
 import {
   createCategoryForUser,
   findOrCreateSubcategoryForUser,
   getCategoriesForUser,
-} from '@/app/dashboard/categories/actions'
+} from '@/app/dashboard/categories/domain'
 import {
   createDebtPaymentForUser,
   deleteDebtPaymentForUser,
   getDebtPaymentsForUser,
   getDebtsForUser,
   updateDebtPaymentForUser,
-} from '@/app/dashboard/debts/actions'
-import { getOverviewDataForUser } from '@/app/dashboard/overview/actions'
-import { getMonthlyFinancialReportForUser } from '@/app/dashboard/spending-trends/actions'
+} from '@/app/dashboard/debts/domain'
+import { getOverviewDataForUser } from '@/app/dashboard/overview/domain'
+import { getMonthlyFinancialReportForUser } from '@/app/dashboard/spending-trends/domain'
 import {
   type SubscriptionPatch,
   createSubscriptionForUser,
   deleteSubscriptionForUser,
   getSubscriptionsForUser,
   updateSubscriptionForUser,
-} from '@/app/dashboard/subscriptions/actions'
+} from '@/app/dashboard/subscriptions/domain'
 import { createSubscriptionSchema } from '@/app/dashboard/subscriptions/schemas'
 import {
   type TransactionPatch,
@@ -38,7 +38,7 @@ import {
   getTransfersForUser,
   updateTransactionForUser,
   updateTransferForUser,
-} from '@/app/dashboard/transactions/actions'
+} from '@/app/dashboard/transactions/domain'
 import {
   transactionSchema,
   transferSchema,

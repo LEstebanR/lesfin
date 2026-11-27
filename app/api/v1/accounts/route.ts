@@ -1,7 +1,7 @@
 import {
   createAccountForUser,
   getAccountsForUser,
-} from '@/app/dashboard/accounts/actions'
+} from '@/app/dashboard/accounts/domain'
 import { readJson, withApiUser } from '@/lib/api/http'
 import { createAccountBody } from '@/lib/api/schemas'
 

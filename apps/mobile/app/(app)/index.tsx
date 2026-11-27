@@ -35,6 +35,7 @@ type Transaction = {
 }
 
 type Account = {
+  id: string
   name: string
   type: string
   balance: number
@@ -298,7 +299,7 @@ function Home({
         contentContainerStyle={styles.horizontal}
       >
         {accounts.map((a) => (
-          <View key={a.name} style={styles.miniAccount}>
+          <View key={a.id} style={styles.miniAccount}>
             <View
               style={[styles.miniIcon, { backgroundColor: `${a.color}22` }]}
             >
@@ -440,7 +441,7 @@ function Accounts({ accounts, add }: { accounts: Account[]; add: () => void }) {
         <Text style={styles.segmentText}>Ahorros</Text>
       </View>
       {accounts.map((a) => (
-        <View key={a.name} style={styles.accountCard}>
+        <View key={a.id} style={styles.accountCard}>
           <View style={[styles.largeIcon, { backgroundColor: a.color }]}>
             <Icon color="#fff" name={a.icon} size={25} />
           </View>
@@ -701,20 +702,23 @@ export default function MobileHome() {
   useEffect(() => {
     let active = true
     api
-      .overview()
-      .then(({ accounts: real }) => {
+      .accounts()
+      .then((real) => {
         if (!active) return
         setAccounts(
-          real.map((a) => {
-            const style = ACCOUNT_STYLE[a.type] ?? ACCOUNT_STYLE.cash
-            return {
-              name: a.name,
-              type: style.label,
-              balance: a.currentBalance,
-              color: a.color ?? style.color,
-              icon: style.icon,
-            }
-          })
+          real
+            .filter((a) => !a.isArchived)
+            .map((a) => {
+              const style = ACCOUNT_STYLE[a.type] ?? ACCOUNT_STYLE.cash
+              return {
+                id: a.id,
+                name: a.name,
+                type: style.label,
+                balance: a.currentBalance,
+                color: a.color ?? style.color,
+                icon: style.icon,
+              }
+            })
         )
       })
       .catch((error: Error) => {
@@ -727,18 +731,10 @@ export default function MobileHome() {
     }
   }, [])
 
+  // The add form is still a mock (#19–#21): it only adds to the local mock
+  // list and never touches the real account balances loaded from the API.
   const add = (t: Transaction) => {
     setTransactions((all) => [t, ...all])
-    setAccounts((all) =>
-      all.map((a, i) =>
-        i === 0
-          ? {
-              ...a,
-              balance: a.balance + (t.kind === 'income' ? t.amount : -t.amount),
-            }
-          : a
-      )
-    )
   }
 
   const handleLogout = () => {

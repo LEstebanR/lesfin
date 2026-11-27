@@ -33,9 +33,10 @@ Supabase has been fully removed — there's no `utils/supabase/*`, no `@supabase
 ## Architecture
 
 - Server Actions live in `actions.ts` next to the route/feature that uses them (e.g. `app/dashboard/accounts/actions.ts`, `app/dashboard/transactions/actions.ts`, `app/dashboard/overview/actions.ts`), not in a shared actions directory.
+- Domain logic parameterised by `userId` (`*ForUser(userId, …)`) lives in a sibling `domain.ts` without `'use server'`: every export of a `'use server'` module can become a Server Action, and these functions trust their `userId` argument. `actions.ts` keeps only session-checked wrappers; the mobile REST API (`app/api/v1/*`, see `docs/mobile-api.md`) and the MCP server call `domain.ts` directly. Throw `BusinessRuleError` (`lib/errors.ts`) for user-facing refusals.
 - `lib/prisma.ts` exports the Prisma client singleton; `lib/auth.ts` is the better-auth server config; `lib/auth-client.ts` is the browser client (`authClient.signIn.social`, `authClient.signOut`, `useSession`); `lib/session.ts` exposes `getServerSession()` for Server Components/Actions.
 - Prisma `Decimal` fields (balances/amounts) must be converted with `Number(...)` before returning from a Server Action to a Client Component — Decimal instances don't survive RSC serialization.
-- Account balance mutations (`createTransaction`, `createTransfer` in `app/dashboard/transactions/actions.ts`) run inside `prisma.$transaction` using atomic `increment`/`decrement`, not read-then-write.
+- Account balance mutations (`createTransactionForUser`, `createTransferForUser` in `app/dashboard/transactions/domain.ts`) run inside `prisma.$transaction` using atomic `increment`/`decrement`, not read-then-write.
 - UI primitives (shadcn-generated) live in `components/ui/`; feature components live in `components/dashboard/`.
 - `components/dashboard/*` are client components that call Server Actions directly (no REST layer) — `app/dashboard/page.tsx` switches between them based on a `?<view>` search param rather than separate routes.
 - Import order and formatting are enforced by Prettier plugins (`@trivago/prettier-plugin-sort-imports`, `prettier-plugin-tailwindcss`) — run `bun run format` rather than hand-ordering imports.
