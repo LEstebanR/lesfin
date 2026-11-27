@@ -1,3 +1,4 @@
+import { findWritableAccount } from '@/lib/accounts'
 import { type Prisma } from '@prisma/client'
 
 export type DebtPaymentInput = {
@@ -97,7 +98,7 @@ export async function applyDebtPayment(
 ) {
   const [debt] = await Promise.all([
     tx.debt.findFirstOrThrow({ where: { id: debtId, userId } }),
-    tx.account.findFirstOrThrow({ where: { id: accountId, userId } }),
+    findWritableAccount(tx, userId, accountId),
   ])
 
   await tx.account.update({
@@ -183,9 +184,7 @@ export async function updateDebtPayment(
     note: 'note' in patch ? (patch.note ?? null) : existing.note,
   }
   if (merged.accountId !== existing.accountId) {
-    await tx.account.findFirstOrThrow({
-      where: { id: merged.accountId, userId },
-    })
+    await findWritableAccount(tx, userId, merged.accountId)
   }
 
   await tx.account.update({

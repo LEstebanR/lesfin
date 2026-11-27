@@ -8,6 +8,7 @@ import type {
   TransactionInput,
   TransferInput,
 } from '@/app/dashboard/transactions/schemas'
+import { findWritableAccount } from '@/lib/accounts'
 import { parseCurrencyInput } from '@/lib/currency'
 import {
   DEBT_CATEGORY_BLOCKED_MESSAGE,
@@ -146,9 +147,7 @@ export async function createTransactionForUser(
     }
 
     if (accountId) {
-      await tx.account.findFirstOrThrow({
-        where: { id: accountId, userId },
-      })
+      await findWritableAccount(tx, userId, accountId)
       const balanceChange = type === 'income' ? amount : -amount
       await tx.account.update({
         where: { id: accountId },
@@ -275,9 +274,9 @@ export async function updateTransactionForUser(
     }
 
     if (merged.accountId) {
-      await tx.account.findFirstOrThrow({
-        where: { id: merged.accountId, userId },
-      })
+      await findWritableAccount(tx, userId, merged.accountId, [
+        existing.accountId,
+      ])
       const newChange =
         merged.type === 'income' ? merged.amount : -merged.amount
       await tx.account.update({
@@ -368,12 +367,8 @@ export async function createTransferForUser(
 
   const transfer = await prisma.$transaction(async (tx) => {
     const [fromAccount, toAccount] = await Promise.all([
-      tx.account.findFirstOrThrow({
-        where: { id: fromAccountId, userId },
-      }),
-      tx.account.findFirstOrThrow({
-        where: { id: toAccountId, userId },
-      }),
+      findWritableAccount(tx, userId, fromAccountId),
+      findWritableAccount(tx, userId, toAccountId),
     ])
     if (fromAccount.userId !== userId || toAccount.userId !== userId) {
       throw new Error('Not authorized')
@@ -454,12 +449,9 @@ export async function updateTransferForUser(
       data: { currentBalance: { decrement: Number(existing.amount) } },
     })
 
-    await tx.account.findFirstOrThrow({
-      where: { id: merged.fromAccountId, userId },
-    })
-    await tx.account.findFirstOrThrow({
-      where: { id: merged.toAccountId, userId },
-    })
+    const editableIds = [existing.fromAccountId, existing.toAccountId]
+    await findWritableAccount(tx, userId, merged.fromAccountId, editableIds)
+    await findWritableAccount(tx, userId, merged.toAccountId, editableIds)
 
     // Apply the updated transfer
     await tx.account.update({

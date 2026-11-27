@@ -16,6 +16,10 @@ export async function getOverviewDataForUser(userId: string) {
     }),
     prisma.transfer.findMany({
       where: { userId },
+      include: {
+        fromAccount: { select: { name: true } },
+        toAccount: { select: { name: true } },
+      },
       orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
     }),
     prisma.debt.findMany({
@@ -37,9 +41,13 @@ export async function getOverviewDataForUser(userId: string) {
         sourceName: account?.name ?? debt?.name ?? null,
       })
     ),
-    transfers: transfers.map((transfer) => ({
+    // Names come from the relation so transfers involving an archived
+    // account (excluded from `accounts` above) still show both ends.
+    transfers: transfers.map(({ fromAccount, toAccount, ...transfer }) => ({
       ...transfer,
       amount: Number(transfer.amount),
+      fromAccountName: fromAccount.name,
+      toAccountName: toAccount.name,
     })),
     totalDebt: debts.reduce(
       (total, debt) => total + Number(debt.remainingBalance),

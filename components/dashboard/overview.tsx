@@ -111,11 +111,6 @@ export function Overview() {
   const totalMinimumPayment = overviewData?.totalMinimumPayment ?? 0
   const loading = loadingOverview || loadingBudget || loadingCashFlow
   const recentItems = useMemo(() => {
-    const accountMap = new Map<string, string>()
-    for (const account of accounts) {
-      accountMap.set(account.id, account.name)
-    }
-
     const transactionItems: CombinedItem[] = transactions
       .slice(0, 5)
       .map((t) => ({
@@ -126,14 +121,14 @@ export function Overview() {
     const transferItems: CombinedItem[] = transfers.slice(0, 5).map((t) => ({
       ...t,
       itemType: 'transfer' as const,
-      fromAccountName: accountMap.get(t.fromAccountId),
-      toAccountName: accountMap.get(t.toAccountId),
+      fromAccountName: t.fromAccountName,
+      toAccountName: t.toAccountName,
     }))
 
     return [...transactionItems, ...transferItems]
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .slice(0, 5)
-  }, [accounts, transactions, transfers])
+  }, [transactions, transfers])
 
   const getTotalBalance = () => {
     return accounts.reduce(

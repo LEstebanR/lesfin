@@ -144,7 +144,11 @@ const handler = createMcpHandler(
         annotations: { readOnlyHint: true },
       },
       withToolHandler('list_accounts', async (_args, ctx) => {
-        const accounts = await getAccountsForUser(requireUserId(ctx))
+        // Archived accounts are hidden from selectors and reject new
+        // movements, so don't offer them to the agent either.
+        const accounts = (await getAccountsForUser(requireUserId(ctx))).filter(
+          (account) => !account.isArchived
+        )
         const structuredContent = { accounts }
         return {
           content: [{ type: 'text', text: JSON.stringify(structuredContent) }],

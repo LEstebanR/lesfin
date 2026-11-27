@@ -73,7 +73,15 @@ export function EditTransactionDialog({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { data: rawAccounts = [] } = useAccounts()
   const { data: rawDebts = [] } = useDebts()
-  const availableAccounts = rawAccounts.filter((a) => !a.isArchived)
+  // Archived accounts can't receive new movements, but the item being edited
+  // may already belong to one — keep it selectable so the select isn't empty.
+  const itemAccountIds =
+    item?.itemType === 'transfer'
+      ? [item.fromAccountId, item.toAccountId]
+      : [item?.accountId]
+  const availableAccounts = rawAccounts.filter(
+    (a) => !a.isArchived || itemAccountIds.includes(a.id)
+  )
   const availableDebts = rawDebts.filter((d) => d.type === 'credit_card')
   const [categoryId, setCategoryId] = useState('')
   const debtCategoryBlocked = useDebtCategoryBlocked(

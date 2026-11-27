@@ -1,5 +1,11 @@
 'use server'
 
+import {
+  archiveAccountForUser,
+  deleteAccountForUser,
+  getAccountImpactForUser,
+  restoreAccountForUser,
+} from '@/lib/accounts'
 import { parseCurrencyInput } from '@/lib/currency'
 import {
   FREE_LIMITS,
@@ -164,4 +170,26 @@ export async function updateAccount(
     initialBalance: Number(account.initialBalance),
     currentBalance: Number(account.currentBalance),
   }
+}
+
+async function requireUserId() {
+  const session = await getServerSession()
+  if (!session) throw new Error('Not authenticated')
+  return session.user.id
+}
+
+export async function getAccountImpact(id: string) {
+  return getAccountImpactForUser(await requireUserId(), id)
+}
+
+export async function archiveAccount(id: string) {
+  return archiveAccountForUser(await requireUserId(), id)
+}
+
+export async function restoreAccount(id: string) {
+  return restoreAccountForUser(await requireUserId(), id)
+}
+
+export async function deleteAccount(id: string) {
+  return deleteAccountForUser(await requireUserId(), id)
 }

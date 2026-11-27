@@ -388,6 +388,36 @@ export const translations = {
       saveChanges: 'Save Changes',
       typeUpdated: 'Account type updated!',
       typeUpdateFailed: 'Failed to update account type. Please try again.',
+      archive: 'Archive',
+      restore: 'Restore',
+      delete: 'Delete',
+      archived: 'Archived',
+      archivedDesc:
+        "Archived accounts keep their history but are hidden from selectors and totals, and don't count toward your plan limit.",
+      archiveTitle: 'Archive "{name}"?',
+      archiveDesc:
+        'It will disappear from selectors, from your active balance and from the Free plan count. Its history is kept and you can restore it anytime.',
+      deleteTitle: 'Delete "{name}" permanently?',
+      deleteDesc: 'This cannot be undone.',
+      deleteBlocked:
+        "This account has movements, transfers or debt payments, so it can't be deleted without losing history. Archive it instead.",
+      impactBalance: 'Current balance: {amount}',
+      impactTransactions: 'Movements: {count}',
+      impactTransfers: 'Transfers: {count}',
+      impactDebtPayments: 'Debt payments: {count}',
+      impactSubscriptionsArchive:
+        'Linked subscriptions: {count} (they stay linked; pick another account when paying them)',
+      impactSubscriptionsDelete:
+        'Linked subscriptions: {count} (they will be unlinked)',
+      accountArchived: 'Account archived',
+      accountRestored: 'Account restored',
+      accountDeleted: 'Account deleted',
+      lifecycleFailed: 'Something went wrong. Please try again.',
+      errorLastActiveAccount: "You can't archive your only active account.",
+      errorPlanLimit:
+        'Free plan is limited to 2 active accounts. Archive another one or upgrade to Pro to restore it.',
+      errorHasHistory:
+        "This account has history and can't be deleted. Archive it instead.",
       backToAccounts: 'Back to Accounts',
       movements: 'Movements',
       movementsDesc: 'All transactions and transfers for this account',
@@ -1265,6 +1295,36 @@ export const translations = {
       typeUpdated: '¡Tipo de cuenta actualizado!',
       typeUpdateFailed:
         'No se pudo actualizar el tipo de cuenta. Intentar de nuevo.',
+      archive: 'Archivar',
+      restore: 'Restaurar',
+      delete: 'Eliminar',
+      archived: 'Archivadas',
+      archivedDesc:
+        'Las cuentas archivadas conservan su historial, pero no aparecen en selectores ni en totales y no cuentan para el límite de tu plan.',
+      archiveTitle: '¿Archivar "{name}"?',
+      archiveDesc:
+        'Desaparecerá de los selectores, de tu saldo activo y del conteo del plan Free. Su historial se conserva y podés restaurarla cuando quieras.',
+      deleteTitle: '¿Eliminar "{name}" definitivamente?',
+      deleteDesc: 'Esta acción no se puede deshacer.',
+      deleteBlocked:
+        'Esta cuenta tiene movimientos, transferencias o pagos de deuda, así que no se puede eliminar sin perder historial. Archivala en su lugar.',
+      impactBalance: 'Saldo actual: {amount}',
+      impactTransactions: 'Movimientos: {count}',
+      impactTransfers: 'Transferencias: {count}',
+      impactDebtPayments: 'Pagos de deuda: {count}',
+      impactSubscriptionsArchive:
+        'Suscripciones vinculadas: {count} (siguen vinculadas; al pagarlas elegí otra cuenta)',
+      impactSubscriptionsDelete:
+        'Suscripciones vinculadas: {count} (se desvincularán)',
+      accountArchived: 'Cuenta archivada',
+      accountRestored: 'Cuenta restaurada',
+      accountDeleted: 'Cuenta eliminada',
+      lifecycleFailed: 'Algo salió mal. Intentar de nuevo.',
+      errorLastActiveAccount: 'No podés archivar tu única cuenta activa.',
+      errorPlanLimit:
+        'El plan Free está limitado a 2 cuentas activas. Archivá otra o pasate a Pro para restaurarla.',
+      errorHasHistory:
+        'Esta cuenta tiene historial y no se puede eliminar. Archivala en su lugar.',
       backToAccounts: 'Volver a Cuentas',
       movements: 'Movimientos',
       movementsDesc: 'Todas las transacciones y transferencias de esta cuenta',
