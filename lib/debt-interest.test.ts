@@ -6,6 +6,7 @@ import {
   interestPeriod,
   isValidInterestRate,
   monthlyRate,
+  parsePercentInput,
   projectPayoff,
   suggestInterest,
 } from './debt-interest'
@@ -16,6 +17,25 @@ import {
 } from './debt-interest-charges'
 
 const d = (iso: string) => new Date(`${iso}T00:00:00.000Z`)
+
+describe('parsePercentInput', () => {
+  it.each([
+    ['24,5', 0.245],
+    ['24.5', 0.245],
+    ['24,5 %', 0.245],
+    ['2%', 0.02],
+    ['0', 0],
+  ])('reads %p as %p', (raw, expected) => {
+    expect(parsePercentInput(raw)).toBeCloseTo(expected, 10)
+  })
+
+  it.each(['1.5,2', '24 5', '1.000,5', 'abc', '-3', ''])(
+    'rejects %p instead of keeping a prefix',
+    (raw) => {
+      expect(parsePercentInput(raw)).toBeNaN()
+    }
+  )
+})
 
 describe('interest rates', () => {
   it.each([-0.01, 10.01, Number.NaN, Number.POSITIVE_INFINITY])(
@@ -144,6 +164,7 @@ function seed(remainingBalance = 1000) {
     ],
     debtInterestCharge: [],
     transaction: [],
+    budgetItem: [{ id: 'future-budget', debtId: 'debt-1' }],
   }
   let nextId = 0
   const matches = (row: Row, where: Record<string, unknown>) =>
@@ -184,6 +205,12 @@ function seed(remainingBalance = 1000) {
     },
     delete: async ({ where }: { where: { id: string } }) => {
       tables[name] = tables[name].filter((r) => r.id !== where.id)
+    },
+    // Every seeded budget item is a future one, so the date filter is moot.
+    deleteMany: async ({ where }: { where: { debtId: string } }) => {
+      const before = tables[name].length
+      tables[name] = tables[name].filter((r) => r.debtId !== where.debtId)
+      return { count: before - tables[name].length }
     },
   })
 
@@ -226,7 +253,7 @@ describe('interest charges', () => {
       applyInterestCharge(
         tx,
         'user-1',
-        { ...charge, date: d('2026-07-31') },
+        { ...charge, date: d('2026-07-30') },
         NOW
       )
     ).rejects.toThrow(/before the debt/)
@@ -234,10 +261,98 @@ describe('interest charges', () => {
       applyInterestCharge(
         tx,
         'user-1',
-        { ...charge, date: d('2026-11-26') },
+        { ...charge, date: d('2026-11-27') },
         NOW
       )
     ).rejects.toThrow(/future/)
+  })
+
+  it("allows the debt's local creation day and today across UTC offsets", async () => {
+    // Created 20:00 on Nov 24 in Colombia (UTC-5) = Nov 25 01:00Z.
+    const { tx, tables } = seed()
+    tables.debt[0].createdAt = new Date('2026-11-25T01:00:00.000Z')
+    const evening = new Date('2026-11-25T01:30:00.000Z')
+
+    await expect(
+      applyInterestCharge(
+        tx,
+        'user-1',
+        { ...charge, date: d('2026-11-24') },
+        evening
+      )
+    ).resolves.toMatchObject({ period: '2026-11' })
+
+    // Early morning in UTC+5: the local day is already a day ahead of UTC.
+    const other = seed()
+    await expect(
+      applyInterestCharge(
+        other.tx,
+        'user-1',
+        { ...charge, date: d('2026-11-26') },
+        new Date('2026-11-25T20:00:00.000Z')
+      )
+    ).resolves.toMatchObject({ period: '2026-11' })
+  })
+
+  it('edits an older charge without re-validating its unchanged date', async () => {
+    const { tx, tables } = seed()
+    tables.debtInterestCharge.push({
+      id: 'old',
+      debtId: 'debt-1',
+      userId: 'user-1',
+      amount: 10,
+      date: d('2026-06-30'),
+      period: '2026-06',
+      source: 'manual',
+      note: null,
+    })
+
+    await expect(
+      updateInterestCharge(tx, 'user-1', 'old', { note: 'fixed' }, NOW)
+    ).resolves.toMatchObject({ note: 'fixed', period: '2026-06' })
+    await expect(
+      updateInterestCharge(tx, 'user-1', 'old', { date: d('2026-06-15') }, NOW)
+    ).rejects.toThrow(/before the debt/)
+  })
+
+  it('refuses to remove interest that was already paid', async () => {
+    const { tx, tables } = seed()
+    const created = await applyInterestCharge(tx, 'user-1', charge, NOW)
+    tables.debt[0].remainingBalance = 0 // paid off, interest included
+
+    await expect(
+      revertInterestCharge(tx, 'user-1', created.id)
+    ).rejects.toThrow(/negative balance/)
+    await expect(
+      updateInterestCharge(tx, 'user-1', created.id, { amount: 5 }, NOW)
+    ).rejects.toThrow(/negative balance/)
+  })
+
+  it('clears future budget items when removing interest pays the debt off', async () => {
+    const { tx, tables } = seed(5)
+    const created = await applyInterestCharge(tx, 'user-1', charge, NOW)
+    tables.debt[0].remainingBalance = 20 // only the interest is left
+
+    await revertInterestCharge(tx, 'user-1', created.id)
+
+    expect(tables.debt[0].remainingBalance).toBe(0)
+    expect(tables.budgetItem).toHaveLength(0)
+  })
+
+  it('maps a unique-index race to the "already recorded" error', async () => {
+    const { tx } = seed()
+    const raw = tx as unknown as {
+      debtInterestCharge: { create: () => Promise<never> }
+    }
+    raw.debtInterestCharge.create = async () => {
+      throw Object.assign(new Error('Unique constraint failed'), {
+        code: 'P2002',
+      })
+    }
+
+    await expect(
+      applyInterestCharge(tx, 'user-1', charge, NOW)
+    ).rejects.toThrow(/Interest for 2026-10 is already recorded/)
   })
 
   it('rejects a charge on a paid-off debt', async () => {

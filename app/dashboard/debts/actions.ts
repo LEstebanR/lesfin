@@ -9,6 +9,7 @@ import {
   MAX_INTEREST_RATE,
   buildDebtLedger,
   monthlyRate,
+  parsePercentInput,
   projectPayoff,
   suggestInterest,
 } from '@/lib/debt-interest'
@@ -97,9 +98,7 @@ const interestTermsSchema = z
 function parseInterestTerms(formData: FormData) {
   const rawRate = String(formData.get('interestRate') ?? '').trim()
   const rawType = String(formData.get('interestRateType') ?? '').trim()
-  const interestRate = rawRate
-    ? parseFloat(rawRate.replace(',', '.')) / 100
-    : null
+  const interestRate = rawRate ? parsePercentInput(rawRate) : null
   const terms = interestTermsSchema.parse({
     interestRate,
     interestRateType: interestRate === null ? null : rawType || null,

@@ -41,6 +41,15 @@ export function isValidInterestRate(rate: number): boolean {
   return Number.isFinite(rate) && rate >= 0 && rate <= MAX_INTEREST_RATE
 }
 
+// Form input as a percentage: "24,5", "24.5" or "24,5 %" → 0.245. Anything
+// else (thousands separators, several numbers, stray characters) is NaN, so
+// validation rejects it instead of parseFloat silently keeping a prefix.
+export function parsePercentInput(raw: string): number {
+  const cleaned = raw.trim().replace(/\s*%$/, '')
+  if (!/^\d+([.,]\d+)?$/.test(cleaned)) return Number.NaN
+  return Number(cleaned.replace(',', '.')) / 100
+}
+
 export function monthlyRate(rate: number, type: InterestRateType): number {
   if (!isValidInterestRate(rate)) {
     throw new Error(`Invalid interest rate: ${rate}`)

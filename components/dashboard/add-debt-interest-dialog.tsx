@@ -15,7 +15,7 @@ import {
 import { toLocalMidnight } from '@/lib/utils'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Loader } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
@@ -109,15 +109,43 @@ export function AddDebtInterestDialog({
     !isEdit && debt.suggestedInterest && debt.suggestedInterest > 0
       ? debt.suggestedInterest
       : null
-  const [suggestedSource, setSuggestedSource] = useState<InterestSource | null>(
-    null
-  )
+  const initialSource = (charge?.source as InterestSource) ?? 'statement'
+  const [source, setSource] = useState<InterestSource>(initialSource)
+  // Set while the amount is exactly the applied suggestion: the source is
+  // 'estimated' only for as long as that holds, and goes back to what it was
+  // once the user types a different amount.
+  const [appliedSuggestion, setAppliedSuggestion] = useState<{
+    value: string
+    previousSource: InterestSource
+  } | null>(null)
+  const [amountKey, setAmountKey] = useState(0)
+  const watchedAmount = form.watch('amount')
+
+  useEffect(() => {
+    if (appliedSuggestion && watchedAmount !== appliedSuggestion.value) {
+      setSource(appliedSuggestion.previousSource)
+      setAppliedSuggestion(null)
+    }
+  }, [watchedAmount, appliedSuggestion])
+
+  const applySuggestion = () => {
+    if (!suggestion) return
+    const value = String(suggestion)
+    form.setValue('amount', value)
+    setAppliedSuggestion({
+      value,
+      previousSource: appliedSuggestion?.previousSource ?? source,
+    })
+    setSource('estimated')
+    setAmountKey((key) => key + 1)
+  }
 
   const onOpenChange = (open: boolean) => {
     if (open) {
       form.reset({ amount: initialAmount })
       setDate(charge ? toLocalMidnight(charge.date) : new Date())
-      setSuggestedSource(null)
+      setSource(initialSource)
+      setAppliedSuggestion(null)
       setFormKey((key) => key + 1)
     }
     setIsOpen(open)
@@ -174,13 +202,11 @@ export function AddDebtInterestDialog({
             noValidate
           >
             <CurrencyField
-              key={`amount-${formKey}-${suggestedSource ?? ''}`}
+              key={`amount-${formKey}-${amountKey}`}
               name="amount"
               label={t('debts.interestAmount')}
               defaultValue={
-                suggestedSource && suggestion
-                  ? String(suggestion)
-                  : initialAmount || undefined
+                appliedSuggestion?.value ?? (initialAmount || undefined)
               }
             />
             {suggestion && (
@@ -195,10 +221,7 @@ export function AddDebtInterestDialog({
                   variant="link"
                   size="sm"
                   className="h-auto p-0 text-xs"
-                  onClick={() => {
-                    form.setValue('amount', String(suggestion))
-                    setSuggestedSource('estimated')
-                  }}
+                  onClick={applySuggestion}
                 >
                   {t('debts.useSuggestion')}
                 </Button>
@@ -212,11 +235,13 @@ export function AddDebtInterestDialog({
               <div className="flex flex-col gap-1">
                 <Label>{t('debts.interestSource')}</Label>
                 <Select
-                  key={`source-${suggestedSource ?? ''}`}
                   name="source"
-                  defaultValue={
-                    suggestedSource ?? charge?.source ?? 'statement'
-                  }
+                  value={source}
+                  onValueChange={(value) => {
+                    setSource(value as InterestSource)
+                    // A source picked by hand wins over the suggestion's.
+                    setAppliedSuggestion(null)
+                  }}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue />
