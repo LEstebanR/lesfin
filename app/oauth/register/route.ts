@@ -1,3 +1,4 @@
+import { isValidRedirectUri } from '@/lib/oauth-redirect'
 import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
 
@@ -9,15 +10,6 @@ const corsHeaders = {
 
 const MAX_REDIRECT_URIS = 10
 const MAX_CLIENT_NAME_LENGTH = 200
-
-function isValidRedirectUri(value: unknown): value is string {
-  if (typeof value !== 'string') return false
-  try {
-    return new URL(value).protocol === 'https:'
-  } catch {
-    return false
-  }
-}
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null)
@@ -33,7 +25,7 @@ export async function POST(request: Request) {
       {
         error: 'invalid_client_metadata',
         error_description:
-          'redirect_uris must be a non-empty array of https URLs (max 10)',
+          'redirect_uris must be a non-empty array of https (or http loopback) URLs (max 10)',
       },
       { status: 400, headers: corsHeaders }
     )
