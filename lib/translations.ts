@@ -401,7 +401,7 @@ export const translations = {
       deleteDesc: 'This cannot be undone.',
       deleteBlocked:
         "This account has movements, transfers or debt payments, so it can't be deleted without losing history. Archive it instead.",
-      impactBalance: 'Current balance: ${amount}',
+      impactBalance: 'Current balance: {amount}',
       impactTransactions: 'Movements: {count}',
       impactTransfers: 'Transfers: {count}',
       impactDebtPayments: 'Debt payments: {count}',
@@ -1308,7 +1308,7 @@ export const translations = {
       deleteDesc: 'Esta acción no se puede deshacer.',
       deleteBlocked:
         'Esta cuenta tiene movimientos, transferencias o pagos de deuda, así que no se puede eliminar sin perder historial. Archivala en su lugar.',
-      impactBalance: 'Saldo actual: ${amount}',
+      impactBalance: 'Saldo actual: {amount}',
       impactTransactions: 'Movimientos: {count}',
       impactTransfers: 'Transferencias: {count}',
       impactDebtPayments: 'Pagos de deuda: {count}',

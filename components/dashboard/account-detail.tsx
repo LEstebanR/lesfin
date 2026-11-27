@@ -8,7 +8,7 @@ import { useAccounts, useTransactions, useTransfers } from '@/lib/queries'
 import { cn } from '@/lib/utils'
 import { ArrowLeft, Lock, Pencil, PiggyBank, Wallet } from 'lucide-react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useMemo, useState } from 'react'
 
 import { Button } from '../ui/button'
@@ -41,6 +41,7 @@ export function AccountDetail() {
   const currency = useCurrency()
   const { t } = useLanguage()
   const searchParams = useSearchParams()
+  const router = useRouter()
   const accountId = searchParams.get('id') ?? ''
 
   const { data: accounts = [], isLoading: loadingAccounts } = useAccounts()
@@ -325,6 +326,7 @@ export function AccountDetail() {
         account={account}
         open={isEditAccountOpen}
         onOpenChange={setIsEditAccountOpen}
+        onLifecycleDone={() => router.push('?accounts')}
       />
     </div>
   )

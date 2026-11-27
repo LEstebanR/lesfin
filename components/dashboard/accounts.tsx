@@ -320,8 +320,15 @@ export function Accounts() {
                     {account.name}
                   </p>
                   <p className="text-muted-foreground text-xs">
-                    {getAccountTypeMeta(account.type).label} · $
-                    {formatMoney(Number(account.currentBalance), currency)}
+                    {getAccountTypeMeta(account.type).label} ·{' '}
+                    <span
+                      className={cn(
+                        account.currentBalance < 0 && 'text-red-600'
+                      )}
+                    >
+                      {account.currentBalance < 0 ? '-' : ''}$
+                      {formatMoney(Number(account.currentBalance), currency)}
+                    </span>
                   </p>
                 </div>
                 <div className="flex shrink-0 gap-2">

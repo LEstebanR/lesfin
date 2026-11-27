@@ -6,6 +6,7 @@ import {
   updateSubscriptionSchema,
 } from '@/app/dashboard/subscriptions/schemas'
 import { createTransaction } from '@/app/dashboard/transactions/actions'
+import { findWritableAccount } from '@/lib/accounts'
 import { parseCurrencyInput } from '@/lib/currency'
 import {
   FREE_LIMITS,
@@ -100,9 +101,7 @@ export async function createSubscriptionForUser(
     where: { id: categoryId, userId },
   })
   if (accountId) {
-    await prisma.account.findFirstOrThrow({
-      where: { id: accountId, userId },
-    })
+    await findWritableAccount(prisma, userId, accountId)
   } else if (debtId) {
     await prisma.debt.findFirstOrThrow({
       where: { id: debtId, userId, type: 'credit_card' },
@@ -202,9 +201,9 @@ export async function updateSubscriptionForUser(
     where: { id: merged.categoryId, userId },
   })
   if (merged.accountId) {
-    await prisma.account.findFirstOrThrow({
-      where: { id: merged.accountId, userId },
-    })
+    await findWritableAccount(prisma, userId, merged.accountId, [
+      existing.accountId,
+    ])
   } else if (merged.debtId) {
     await prisma.debt.findFirstOrThrow({
       where: { id: merged.debtId, userId, type: 'credit_card' },

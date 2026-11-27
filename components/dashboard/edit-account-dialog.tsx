@@ -32,16 +32,20 @@ interface Account {
   color?: string | null
   logoUrl?: string | null
   icon?: string | null
+  isArchived?: boolean
 }
 
 export function EditAccountDialog({
   account,
   open,
   onOpenChange,
+  onLifecycleDone,
 }: {
   account: Account | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  // Called after the account was archived or deleted from this dialog.
+  onLifecycleDone?: () => void
 }) {
   const { t } = useLanguage()
   const { triggerRefresh } = useDashboardRefresh()
@@ -152,15 +156,17 @@ export function EditAccountDialog({
               )}
             </Button>
             <div className="flex gap-2 border-t pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1"
-                onClick={() => setLifecycleMode('archive')}
-              >
-                <Archive className="h-4 w-4" />
-                {t('accounts.archive')}
-              </Button>
+              {!account.isArchived && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setLifecycleMode('archive')}
+                >
+                  <Archive className="h-4 w-4" />
+                  {t('accounts.archive')}
+                </Button>
+              )}
               <Button
                 type="button"
                 variant="outline"
@@ -180,7 +186,10 @@ export function EditAccountDialog({
         onOpenChange={(open) => {
           if (!open) setLifecycleMode(null)
         }}
-        onDone={() => onOpenChange(false)}
+        onDone={() => {
+          onOpenChange(false)
+          onLifecycleDone?.()
+        }}
       />
     </Dialog>
   )

@@ -71,7 +71,9 @@ export function AccountLifecycleDialog({
       })
       .catch((error) => {
         console.error('Error loading account impact:', error)
-        if (!cancelled) toast.error(t('accounts.lifecycleFailed'))
+        if (cancelled) return
+        toast.error(t('accounts.lifecycleFailed'))
+        onOpenChange(false)
       })
     return () => {
       cancelled = true
@@ -136,7 +138,7 @@ export function AccountLifecycleDialog({
           <ul className="text-muted-foreground list-disc space-y-1 pl-5 text-sm">
             <li>
               {t('accounts.impactBalance', {
-                amount: formatMoney(impact.balance, currency),
+                amount: `${impact.balance < 0 ? '-' : ''}$${formatMoney(impact.balance, currency)}`,
               })}
             </li>
             <li>
