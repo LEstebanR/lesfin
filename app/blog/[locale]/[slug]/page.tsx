@@ -8,6 +8,7 @@ import {
   getPostSlugs,
   getTranslationSlug,
 } from '@/lib/blog'
+import { formatPostDate } from '@/lib/blog-date'
 import { socialImage } from '@/lib/site'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import type { Metadata } from 'next'
@@ -94,10 +95,7 @@ export default async function BlogPostPage({
       ? 'Empezá a registrar gratis — sin tarjeta, sin configuración.'
       : 'Start tracking for free — no credit card, no setup.'
   const ctaButton = locale === 'es' ? 'Empezar gratis' : 'Start for free'
-  const formattedDate = new Date(post.date).toLocaleDateString(
-    locale === 'es' ? 'es-ES' : 'en-US',
-    { year: 'numeric', month: 'long', day: 'numeric' }
-  )
+  const formattedDate = formatPostDate(post.date, locale)
 
   return (
     <div className="bg-background text-foreground flex flex-col items-center">

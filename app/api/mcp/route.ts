@@ -11,10 +11,15 @@ import {
   getCategoriesForUser,
 } from '@/app/dashboard/categories/domain'
 import {
+  createDebtInterestChargeForUser,
   createDebtPaymentForUser,
+  deleteDebtInterestChargeForUser,
   deleteDebtPaymentForUser,
+  getDebtInterestChargesForUser,
+  getDebtLedgerForUser,
   getDebtPaymentsForUser,
   getDebtsForUser,
+  updateDebtInterestChargeForUser,
   updateDebtPaymentForUser,
 } from '@/app/dashboard/debts/domain'
 import { getOverviewDataForUser } from '@/app/dashboard/overview/domain'
@@ -254,7 +259,7 @@ const handler = createMcpHandler(
       {
         title: 'List debts',
         description:
-          "List loans and credit cards with outstanding balance, minimum payment, and due day. Use this for questions about debt balances, interest, or overall debt load. For 'what payments are due on a specific date or range', prefer get_due_payments instead of computing due dates from paymentDueDay yourself — it also excludes debts that are fully paid off.",
+          "List loans and credit cards with outstanding balance, minimum payment, due day, and interest: interestRate (a fraction, 0.245 = 24.5%) with interestRateType (effective_annual, nominal_annual or monthly) and monthlyInterestRate, totalInterest accrued, lastInterestCharge, suggestedInterest (balance × monthly rate, an estimate), and a payoff projection paying the minimum each month (status ok/never/no_rate/no_payment/paid_off/too_long; it ignores future purchases, so treat it as an estimate). totalPaid counts payments only, never interest. Use this for questions about debt balances, interest, or overall debt load. For a debt's month-by-month balance history use get_debt_ledger. For 'what payments are due on a specific date or range', prefer get_due_payments instead of computing due dates from paymentDueDay yourself — it also excludes debts that are fully paid off.",
         inputSchema: z.object({}),
         outputSchema: z.object({ debts: z.array(anyRecord) }),
         annotations: { readOnlyHint: true },
@@ -729,6 +734,169 @@ const handler = createMcpHandler(
           structuredContent,
         }
       })
+    )
+
+    server.registerTool(
+      'list_debt_interest_charges',
+      {
+        title: 'List debt interest charges',
+        description:
+          "List the interest accrued on one loan or credit card, newest first: amount, date, period ('YYYY-MM', one charge per month), source (manual, statement or estimated) and note. Use this to find a chargeId for update_debt_interest_charge or delete_debt_interest_charge.",
+        inputSchema: z.object({ debtId: z.string().uuid() }),
+        outputSchema: z.object({ charges: z.array(anyRecord) }),
+        annotations: { readOnlyHint: true },
+      },
+      withToolHandler('list_debt_interest_charges', async ({ debtId }, ctx) => {
+        const charges = await getDebtInterestChargesForUser(
+          requireUserId(ctx),
+          debtId
+        )
+        const structuredContent = { charges }
+        return {
+          content: [{ type: 'text', text: JSON.stringify(structuredContent) }],
+          structuredContent,
+        }
+      })
+    )
+
+    server.registerTool(
+      'get_debt_ledger',
+      {
+        title: 'Get debt ledger',
+        description:
+          "Rebuild one debt's balance chronologically from its opening balance (originalAmount), credit-card purchases, interest charges and payments: every movement with its running balance, totals per kind, the rebuilt balance, the stored remainingBalance, and drift between the two (0 when they agree). Use this to explain how a debt's balance evolved or to spot inconsistencies.",
+        inputSchema: z.object({ debtId: z.string().uuid() }),
+        outputSchema: anyRecord,
+        annotations: { readOnlyHint: true },
+      },
+      withToolHandler('get_debt_ledger', async ({ debtId }, ctx) => {
+        const structuredContent = await getDebtLedgerForUser(
+          requireUserId(ctx),
+          debtId
+        )
+        return {
+          content: [{ type: 'text', text: JSON.stringify(structuredContent) }],
+          structuredContent,
+        }
+      })
+    )
+
+    server.registerTool(
+      'create_debt_interest_charge',
+      {
+        title: 'Create debt interest charge',
+        description:
+          "Record interest accrued on a loan or credit card for one month: raises the debt's remaining balance, but does NOT count toward totalPaid and is NOT an expense. Only one charge per debt and month — if that month already has one, use update_debt_interest_charge. Rejected for a debt that's paid off, a date before the debt was created, or a future date. Prefer the amount from the statement (source 'statement'); use list_debts' suggestedInterest only as an estimate (source 'estimated'). Confirm the amount and month with the user before calling.",
+        inputSchema: z.object({
+          debtId: z.string().uuid(),
+          amount: z.number().positive(),
+          date: z.string(),
+          source: z.enum(['manual', 'statement', 'estimated']).optional(),
+          note: z.string().optional(),
+          idempotencyKey: idempotencyKeyField,
+        }),
+        outputSchema: anyRecord,
+        annotations: { readOnlyHint: false, destructiveHint: true },
+      },
+      withToolHandler('create_debt_interest_charge', async (args, ctx) => {
+        const userId = requireUserId(ctx)
+
+        return withIdempotency(
+          userId,
+          'create_debt_interest_charge',
+          args.idempotencyKey,
+          async () => {
+            const charge = await createDebtInterestChargeForUser(userId, {
+              debtId: args.debtId,
+              amount: args.amount,
+              date: new Date(args.date),
+              source: args.source,
+              note: args.note,
+            })
+            const debt = await prisma.debt.findUnique({
+              where: { id: charge.debtId },
+            })
+            const structuredContent = {
+              ...charge,
+              debtName: debt?.name ?? null,
+              remainingBalance: debt ? Number(debt.remainingBalance) : null,
+            }
+            return {
+              content: [
+                { type: 'text', text: JSON.stringify(structuredContent) },
+              ],
+              structuredContent,
+            }
+          }
+        )
+      })
+    )
+
+    server.registerTool(
+      'update_debt_interest_charge',
+      {
+        title: 'Update debt interest charge',
+        description:
+          "Correct an interest charge in place: the debt's balance moves by the difference only. Only send the fields that changed; send note as null to clear it. Moving it to a month that already has a charge is rejected. Confirm with the user before calling. Get chargeId from list_debt_interest_charges.",
+        inputSchema: z.object({
+          chargeId: z.string().uuid(),
+          amount: z.number().positive().optional(),
+          date: z.string().optional(),
+          source: z.enum(['manual', 'statement', 'estimated']).optional(),
+          note: z.string().nullish(),
+        }),
+        outputSchema: anyRecord,
+        annotations: { readOnlyHint: false, destructiveHint: true },
+      },
+      withToolHandler('update_debt_interest_charge', async (args, ctx) => {
+        const charge = await updateDebtInterestChargeForUser(
+          requireUserId(ctx),
+          args.chargeId,
+          {
+            ...(args.amount !== undefined && { amount: args.amount }),
+            ...(args.date !== undefined && { date: new Date(args.date) }),
+            ...(args.source !== undefined && { source: args.source }),
+            ...(args.note !== undefined && { note: args.note }),
+          }
+        )
+        const debt = await prisma.debt.findUnique({
+          where: { id: charge.debtId },
+        })
+        const structuredContent = {
+          ...charge,
+          debtName: debt?.name ?? null,
+          remainingBalance: debt ? Number(debt.remainingBalance) : null,
+        }
+        return {
+          content: [{ type: 'text', text: JSON.stringify(structuredContent) }],
+          structuredContent,
+        }
+      })
+    )
+
+    server.registerTool(
+      'delete_debt_interest_charge',
+      {
+        title: 'Delete debt interest charge',
+        description:
+          "Permanently delete an interest charge and lower the debt's remaining balance by its amount. To correct it, use update_debt_interest_charge instead. Confirm with the user before calling. Get chargeId from list_debt_interest_charges.",
+        inputSchema: z.object({ chargeId: z.string().uuid() }),
+        outputSchema: z.object({ success: z.boolean() }),
+        annotations: { readOnlyHint: false, destructiveHint: true },
+      },
+      withToolHandler(
+        'delete_debt_interest_charge',
+        async ({ chargeId }, ctx) => {
+          await deleteDebtInterestChargeForUser(requireUserId(ctx), chargeId)
+          const structuredContent = { success: true }
+          return {
+            content: [
+              { type: 'text', text: JSON.stringify(structuredContent) },
+            ],
+            structuredContent,
+          }
+        }
+      )
     )
 
     server.registerTool(

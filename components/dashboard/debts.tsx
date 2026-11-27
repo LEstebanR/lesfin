@@ -3,6 +3,7 @@
 import { useCurrency } from '@/components/currency-provider'
 import { useLanguage } from '@/components/language-provider'
 import { formatMoney } from '@/lib/currency'
+import { type InterestRateType } from '@/lib/debt-interest'
 import { useDebts } from '@/lib/queries'
 import { Check, CreditCard, Landmark, PlusIcon, Wallet } from 'lucide-react'
 import Link from 'next/link'
@@ -46,6 +47,8 @@ interface Debt {
   minimumPayment: number | null
   paymentDueDay: number | null
   creditLimit: number | null
+  interestRate: number | null
+  interestRateType: InterestRateType | null
   totalPaid: number
   createdAt: Date
 }

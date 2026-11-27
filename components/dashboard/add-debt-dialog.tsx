@@ -32,6 +32,7 @@ import {
   SelectValue,
 } from '../ui/select'
 import { TextField } from '../ui/text-field'
+import { InterestTermsFields } from './interest-terms-fields'
 import { useDashboardRefresh } from './refresh-provider'
 
 export function AddDebtDialog({
@@ -144,6 +145,7 @@ export function AddDebtDialog({
                 />
               </div>
             </div>
+            <InterestTermsFields />
             <Button className="w-full" type="submit" disabled={isSubmitting}>
               {isSubmitting ? (
                 <>

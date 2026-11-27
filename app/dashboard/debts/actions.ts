@@ -1,24 +1,30 @@
 'use server'
 
 import {
+  createDebtInterestChargeForUser,
   createDebtPaymentForUser,
   debtPaymentSchema,
+  deleteDebtInterestChargeForUser,
   deleteDebtPaymentForUser,
+  getDebtInterestChargesForUser,
+  getDebtLedgerForUser,
   getDebtPaymentsForUser,
   getDebtsForUser,
+  serializeDebt,
+  updateDebtInterestChargeForUser,
   updateDebtPaymentForUser,
 } from '@/app/dashboard/debts/domain'
 import { parseCurrencyInput, parseOptionalCurrencyInput } from '@/lib/currency'
+import {
+  INTEREST_RATE_TYPES,
+  type InterestSource,
+  MAX_INTEREST_RATE,
+  parsePercentInput,
+} from '@/lib/debt-interest'
 import { FREE_LIMITS, getUserPlan } from '@/lib/plan-limits'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from '@/lib/session'
-import {
-  optionalString,
-  positiveAmount,
-  requiredString,
-  uuidField,
-  validDate,
-} from '@/lib/validation'
+import { positiveAmount, requiredString } from '@/lib/validation'
 import { z } from 'zod'
 
 const debtTypeSchema = z.enum(['loan', 'credit_card'])
@@ -39,12 +45,36 @@ const updateDebtSchema = z.object({
   creditLimit: positiveAmount.nullable(),
 })
 
-const debtInterestChargeSchema = z.object({
-  debtId: uuidField,
-  amount: positiveAmount,
-  date: validDate,
-  note: optionalString,
-})
+// The rate is a fraction (0.245 = 24.5%); it and its type go together.
+const interestTermsSchema = z
+  .object({
+    interestRate: z.number().finite().min(0).max(MAX_INTEREST_RATE).nullable(),
+    interestRateType: z.enum(INTEREST_RATE_TYPES).nullable(),
+  })
+  .refine(
+    ({ interestRate, interestRateType }) =>
+      (interestRate === null) === (interestRateType === null),
+    {
+      message: 'An interest rate needs its type, and vice versa',
+      path: ['interestRateType'],
+    }
+  )
+
+// The form sends the rate as a percentage ("24,5" or "24.5" → 0.245); an
+// empty field means no rate. NaN is left for zod to reject.
+function parseInterestTerms(formData: FormData) {
+  const rawRate = String(formData.get('interestRate') ?? '').trim()
+  const rawType = String(formData.get('interestRateType') ?? '').trim()
+  const interestRate = rawRate ? parsePercentInput(rawRate) : null
+  const terms = interestTermsSchema.parse({
+    interestRate,
+    interestRateType: interestRate === null ? null : rawType || null,
+  })
+  return {
+    ...terms,
+    accrualFrequency: terms.interestRate === null ? null : ('monthly' as const),
+  }
+}
 
 export async function getDebts() {
   const session = await getServerSession()
@@ -64,15 +94,14 @@ export async function getDebtInterestCharges(debtId: string) {
   const session = await getServerSession()
   if (!session) throw new Error('Not authenticated')
 
-  const charges = await prisma.debtInterestCharge.findMany({
-    where: { debtId, userId: session.user.id },
-    orderBy: { date: 'desc' },
-  })
+  return getDebtInterestChargesForUser(session.user.id, debtId)
+}
 
-  return charges.map((charge) => ({
-    ...charge,
-    amount: Number(charge.amount),
-  }))
+export async function getDebtLedger(debtId: string) {
+  const session = await getServerSession()
+  if (!session) throw new Error('Not authenticated')
+
+  return getDebtLedgerForUser(session.user.id, debtId)
 }
 
 function parsePaymentDueDay(value: FormDataEntryValue | null): number | null {
@@ -116,6 +145,7 @@ export async function createDebt(formData: FormData) {
         ? parseOptionalCurrencyInput(formData.get('creditLimit'))
         : null,
   })
+  const interestTerms = parseInterestTerms(formData)
 
   const debt = await prisma.debt.create({
     data: {
@@ -127,17 +157,11 @@ export async function createDebt(formData: FormData) {
       minimumPayment,
       paymentDueDay,
       creditLimit,
+      ...interestTerms,
     },
   })
 
-  return {
-    ...debt,
-    originalAmount: Number(debt.originalAmount),
-    remainingBalance: Number(debt.remainingBalance),
-    minimumPayment:
-      debt.minimumPayment === null ? null : Number(debt.minimumPayment),
-    creditLimit: debt.creditLimit === null ? null : Number(debt.creditLimit),
-  }
+  return serializeDebt(debt)
 }
 
 export async function updateDebt(id: string, formData: FormData) {
@@ -160,6 +184,7 @@ export async function updateDebt(id: string, formData: FormData) {
           ? parseOptionalCurrencyInput(formData.get('creditLimit'))
           : null,
     })
+  const interestTerms = parseInterestTerms(formData)
 
   const debt = await prisma.$transaction(async (tx) => {
     const updated = await tx.debt.update({
@@ -169,6 +194,7 @@ export async function updateDebt(id: string, formData: FormData) {
         minimumPayment,
         paymentDueDay,
         creditLimit,
+        ...interestTerms,
       },
     })
 
@@ -183,14 +209,7 @@ export async function updateDebt(id: string, formData: FormData) {
     return updated
   })
 
-  return {
-    ...debt,
-    originalAmount: Number(debt.originalAmount),
-    remainingBalance: Number(debt.remainingBalance),
-    minimumPayment:
-      debt.minimumPayment === null ? null : Number(debt.minimumPayment),
-    creditLimit: debt.creditLimit === null ? null : Number(debt.creditLimit),
-  }
+  return serializeDebt(debt)
 }
 
 export async function deleteDebt(id: string) {
@@ -243,33 +262,34 @@ export async function createDebtInterestCharge(formData: FormData) {
   const session = await getServerSession()
   if (!session) throw new Error('Not authenticated')
 
-  const { debtId, amount, date, note } = debtInterestChargeSchema.parse({
-    debtId: formData.get('debtId'),
+  return createDebtInterestChargeForUser(session.user.id, {
+    debtId: formData.get('debtId') as string,
     amount: parseCurrencyInput(formData.get('amount')),
     date: new Date(formData.get('date') as string),
-    note: formData.get('note'),
+    source: ((formData.get('source') as string | null) || undefined) as
+      | InterestSource
+      | undefined,
+    note: formData.get('note') as string | null,
   })
+}
 
-  const charge = await prisma.$transaction(async (tx) => {
-    await tx.debt.findFirstOrThrow({
-      where: { id: debtId, userId: session.user.id },
-    })
+export async function editDebtInterestCharge(id: string, formData: FormData) {
+  const session = await getServerSession()
+  if (!session) throw new Error('Not authenticated')
 
-    await tx.debt.update({
-      where: { id: debtId },
-      data: { remainingBalance: { increment: amount } },
-    })
-
-    return tx.debtInterestCharge.create({
-      data: {
-        debtId,
-        userId: session.user.id,
-        amount,
-        date,
-        note,
-      },
-    })
+  return updateDebtInterestChargeForUser(session.user.id, id, {
+    amount: parseCurrencyInput(formData.get('amount')),
+    date: new Date(formData.get('date') as string),
+    source: ((formData.get('source') as string | null) || undefined) as
+      | InterestSource
+      | undefined,
+    note: (formData.get('note') as string | null) ?? null,
   })
+}
 
-  return { ...charge, amount: Number(charge.amount) }
+export async function deleteDebtInterestCharge(id: string) {
+  const session = await getServerSession()
+  if (!session) throw new Error('Not authenticated')
+
+  await deleteDebtInterestChargeForUser(session.user.id, id)
 }
