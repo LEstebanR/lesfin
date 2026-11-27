@@ -2,6 +2,24 @@
 
 import { parseCurrencyInput, parseOptionalCurrencyInput } from '@/lib/currency'
 import {
+  INTEREST_RATE_TYPES,
+  INTEREST_SOURCES,
+  type InterestRateType,
+  type InterestSource,
+  MAX_INTEREST_RATE,
+  buildDebtLedger,
+  monthlyRate,
+  parsePercentInput,
+  projectPayoff,
+  suggestInterest,
+} from '@/lib/debt-interest'
+import {
+  type InterestChargePatch,
+  applyInterestCharge,
+  revertInterestCharge,
+  updateInterestCharge,
+} from '@/lib/debt-interest-charges'
+import {
   type DebtPaymentPatch,
   applyDebtPayment,
   revertDebtPayment,
@@ -49,14 +67,69 @@ const debtInterestChargeSchema = z.object({
   debtId: uuidField,
   amount: positiveAmount,
   date: validDate,
+  source: z.enum(INTEREST_SOURCES).default('manual'),
   note: optionalString,
 })
+
+const debtInterestChargePatchSchema = z.object({
+  amount: positiveAmount.optional(),
+  date: validDate.optional(),
+  source: z.enum(INTEREST_SOURCES).optional(),
+  note: optionalString,
+})
+
+// The rate is a fraction (0.245 = 24.5%); it and its type go together.
+const interestTermsSchema = z
+  .object({
+    interestRate: z.number().finite().min(0).max(MAX_INTEREST_RATE).nullable(),
+    interestRateType: z.enum(INTEREST_RATE_TYPES).nullable(),
+  })
+  .refine(
+    ({ interestRate, interestRateType }) =>
+      (interestRate === null) === (interestRateType === null),
+    {
+      message: 'An interest rate needs its type, and vice versa',
+      path: ['interestRateType'],
+    }
+  )
+
+// The form sends the rate as a percentage ("24,5" or "24.5" → 0.245); an
+// empty field means no rate. NaN is left for zod to reject.
+function parseInterestTerms(formData: FormData) {
+  const rawRate = String(formData.get('interestRate') ?? '').trim()
+  const rawType = String(formData.get('interestRateType') ?? '').trim()
+  const interestRate = rawRate ? parsePercentInput(rawRate) : null
+  const terms = interestTermsSchema.parse({
+    interestRate,
+    interestRateType: interestRate === null ? null : rawType || null,
+  })
+  return {
+    ...terms,
+    accrualFrequency: terms.interestRate === null ? null : ('monthly' as const),
+  }
+}
+
+type DebtRow = Awaited<ReturnType<typeof prisma.debt.findFirstOrThrow>>
+
+// Decimal fields don't survive RSC serialization.
+function serializeDebt(debt: DebtRow) {
+  return {
+    ...debt,
+    originalAmount: Number(debt.originalAmount),
+    remainingBalance: Number(debt.remainingBalance),
+    minimumPayment:
+      debt.minimumPayment === null ? null : Number(debt.minimumPayment),
+    creditLimit: debt.creditLimit === null ? null : Number(debt.creditLimit),
+    interestRate: debt.interestRate === null ? null : Number(debt.interestRate),
+    interestRateType: debt.interestRateType as InterestRateType | null,
+  }
+}
 
 export async function getDebtsForUser(userId: string) {
   const plan = await getUserPlan(userId)
   await reconcileDebtLocks(userId, plan)
 
-  const [debts, paidByDebt] = await Promise.all([
+  const [debts, paidByDebt, interestByDebt, lastCharges] = await Promise.all([
     prisma.debt.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
@@ -66,24 +139,64 @@ export async function getDebtsForUser(userId: string) {
       where: { userId },
       _sum: { amount: true },
     }),
+    prisma.debtInterestCharge.groupBy({
+      by: ['debtId'],
+      where: { userId },
+      _sum: { amount: true },
+    }),
+    prisma.debtInterestCharge.findMany({
+      where: { userId },
+      orderBy: { date: 'desc' },
+      distinct: ['debtId'],
+    }),
   ])
   const totalPaidByDebtId = new Map(
     paidByDebt.map((row) => [row.debtId, Number(row._sum.amount ?? 0)])
   )
+  const totalInterestByDebtId = new Map(
+    interestByDebt.map((row) => [row.debtId, Number(row._sum.amount ?? 0)])
+  )
+  const lastChargeByDebtId = new Map(
+    lastCharges.map((charge) => [charge.debtId, charge])
+  )
 
-  return debts.map((debt) => ({
-    ...debt,
-    originalAmount: Number(debt.originalAmount),
-    remainingBalance: Number(debt.remainingBalance),
-    minimumPayment:
-      debt.minimumPayment === null ? null : Number(debt.minimumPayment),
-    creditLimit: debt.creditLimit === null ? null : Number(debt.creditLimit),
-    // Real cumulative principal payments, distinct from remainingBalance
-    // (which also moves with interest charges and credit-card purchases) —
-    // used for the "amount paid" progress display so interest can't make it
-    // look like it was paid off.
-    totalPaid: totalPaidByDebtId.get(debt.id) ?? 0,
-  }))
+  return debts.map((debt) => {
+    const serialized = serializeDebt(debt)
+    const { remainingBalance, interestRate, interestRateType } = serialized
+    const hasRate = interestRate !== null && interestRateType !== null
+    const lastCharge = lastChargeByDebtId.get(debt.id)
+
+    return {
+      ...serialized,
+      // Real cumulative principal payments, distinct from remainingBalance
+      // (which also moves with interest charges and credit-card purchases) —
+      // used for the "amount paid" progress display so interest can't make it
+      // look like it was paid off.
+      totalPaid: totalPaidByDebtId.get(debt.id) ?? 0,
+      totalInterest: totalInterestByDebtId.get(debt.id) ?? 0,
+      lastInterestCharge: lastCharge
+        ? {
+            id: lastCharge.id,
+            amount: Number(lastCharge.amount),
+            date: lastCharge.date,
+            period: lastCharge.period,
+            source: lastCharge.source,
+          }
+        : null,
+      monthlyInterestRate: hasRate
+        ? monthlyRate(interestRate, interestRateType)
+        : null,
+      suggestedInterest: hasRate
+        ? suggestInterest(remainingBalance, interestRate, interestRateType)
+        : null,
+      projection: projectPayoff({
+        balance: remainingBalance,
+        rate: interestRate,
+        rateType: interestRateType,
+        monthlyPayment: serialized.minimumPayment,
+      }),
+    }
+  })
 }
 
 export async function getDebts() {
@@ -116,8 +229,15 @@ export async function getDebtInterestCharges(debtId: string) {
   const session = await getServerSession()
   if (!session) throw new Error('Not authenticated')
 
+  return getDebtInterestChargesForUser(session.user.id, debtId)
+}
+
+export async function getDebtInterestChargesForUser(
+  userId: string,
+  debtId: string
+) {
   const charges = await prisma.debtInterestCharge.findMany({
-    where: { debtId, userId: session.user.id },
+    where: { debtId, userId },
     orderBy: { date: 'desc' },
   })
 
@@ -125,6 +245,58 @@ export async function getDebtInterestCharges(debtId: string) {
     ...charge,
     amount: Number(charge.amount),
   }))
+}
+
+export async function getDebtLedger(debtId: string) {
+  const session = await getServerSession()
+  if (!session) throw new Error('Not authenticated')
+
+  return getDebtLedgerForUser(session.user.id, debtId)
+}
+
+// The debt's history rebuilt chronologically from its opening balance,
+// purchases, interest charges and payments. remainingBalance stays the stored
+// source of truth; `drift` flags when the two disagree.
+export async function getDebtLedgerForUser(userId: string, debtId: string) {
+  const debt = await prisma.debt.findFirstOrThrow({
+    where: { id: debtId, userId },
+  })
+  const [payments, charges, purchases] = await Promise.all([
+    prisma.debtPayment.findMany({ where: { debtId, userId } }),
+    prisma.debtInterestCharge.findMany({ where: { debtId, userId } }),
+    prisma.transaction.findMany({ where: { debtId, userId } }),
+  ])
+
+  const ledger = buildDebtLedger(Number(debt.originalAmount), [
+    ...purchases.map((p) => ({
+      id: p.id,
+      kind: 'purchase' as const,
+      amount: Number(p.amount),
+      date: p.date,
+      description: p.description,
+    })),
+    ...charges.map((c) => ({
+      id: c.id,
+      kind: 'interest' as const,
+      amount: Number(c.amount),
+      date: c.date,
+      description: c.note,
+    })),
+    ...payments.map((p) => ({
+      id: p.id,
+      kind: 'payment' as const,
+      amount: Number(p.amount),
+      date: p.date,
+      description: p.note,
+    })),
+  ])
+  const storedBalance = Number(debt.remainingBalance)
+
+  return {
+    ...ledger,
+    storedBalance,
+    drift: Math.round((storedBalance - ledger.balance) * 100) / 100,
+  }
 }
 
 function parsePaymentDueDay(value: FormDataEntryValue | null): number | null {
@@ -168,6 +340,7 @@ export async function createDebt(formData: FormData) {
         ? parseOptionalCurrencyInput(formData.get('creditLimit'))
         : null,
   })
+  const interestTerms = parseInterestTerms(formData)
 
   const debt = await prisma.debt.create({
     data: {
@@ -179,17 +352,11 @@ export async function createDebt(formData: FormData) {
       minimumPayment,
       paymentDueDay,
       creditLimit,
+      ...interestTerms,
     },
   })
 
-  return {
-    ...debt,
-    originalAmount: Number(debt.originalAmount),
-    remainingBalance: Number(debt.remainingBalance),
-    minimumPayment:
-      debt.minimumPayment === null ? null : Number(debt.minimumPayment),
-    creditLimit: debt.creditLimit === null ? null : Number(debt.creditLimit),
-  }
+  return serializeDebt(debt)
 }
 
 export async function updateDebt(id: string, formData: FormData) {
@@ -212,6 +379,7 @@ export async function updateDebt(id: string, formData: FormData) {
           ? parseOptionalCurrencyInput(formData.get('creditLimit'))
           : null,
     })
+  const interestTerms = parseInterestTerms(formData)
 
   const debt = await prisma.$transaction(async (tx) => {
     const updated = await tx.debt.update({
@@ -221,6 +389,7 @@ export async function updateDebt(id: string, formData: FormData) {
         minimumPayment,
         paymentDueDay,
         creditLimit,
+        ...interestTerms,
       },
     })
 
@@ -235,14 +404,7 @@ export async function updateDebt(id: string, formData: FormData) {
     return updated
   })
 
-  return {
-    ...debt,
-    originalAmount: Number(debt.originalAmount),
-    remainingBalance: Number(debt.remainingBalance),
-    minimumPayment:
-      debt.minimumPayment === null ? null : Number(debt.minimumPayment),
-    creditLimit: debt.creditLimit === null ? null : Number(debt.creditLimit),
-  }
+  return serializeDebt(debt)
 }
 
 export async function deleteDebt(id: string) {
@@ -341,33 +503,76 @@ export async function createDebtInterestCharge(formData: FormData) {
   const session = await getServerSession()
   if (!session) throw new Error('Not authenticated')
 
-  const { debtId, amount, date, note } = debtInterestChargeSchema.parse({
-    debtId: formData.get('debtId'),
+  return createDebtInterestChargeForUser(session.user.id, {
+    debtId: formData.get('debtId') as string,
     amount: parseCurrencyInput(formData.get('amount')),
     date: new Date(formData.get('date') as string),
-    note: formData.get('note'),
+    source: ((formData.get('source') as string | null) || undefined) as
+      | InterestSource
+      | undefined,
+    note: formData.get('note') as string | null,
   })
+}
 
-  const charge = await prisma.$transaction(async (tx) => {
-    await tx.debt.findFirstOrThrow({
-      where: { id: debtId, userId: session.user.id },
-    })
-
-    await tx.debt.update({
-      where: { id: debtId },
-      data: { remainingBalance: { increment: amount } },
-    })
-
-    return tx.debtInterestCharge.create({
-      data: {
-        debtId,
-        userId: session.user.id,
-        amount,
-        date,
-        note,
-      },
-    })
-  })
+// Shared by the dashboard and the MCP server. An accrual raises the balance
+// but never counts toward totalPaid nor as an expense.
+export async function createDebtInterestChargeForUser(
+  userId: string,
+  input: z.input<typeof debtInterestChargeSchema>
+) {
+  const parsed = debtInterestChargeSchema.parse(input)
+  const charge = await prisma.$transaction((tx) =>
+    applyInterestCharge(tx, userId, parsed)
+  )
 
   return { ...charge, amount: Number(charge.amount) }
+}
+
+export async function editDebtInterestCharge(id: string, formData: FormData) {
+  const session = await getServerSession()
+  if (!session) throw new Error('Not authenticated')
+
+  return updateDebtInterestChargeForUser(session.user.id, id, {
+    amount: parseCurrencyInput(formData.get('amount')),
+    date: new Date(formData.get('date') as string),
+    source: ((formData.get('source') as string | null) || undefined) as
+      | InterestSource
+      | undefined,
+    note: (formData.get('note') as string | null) ?? null,
+  })
+}
+
+// Only the fields present in the patch change; for note, sending null (or an
+// empty string) clears it while leaving it out keeps the current one.
+export async function updateDebtInterestChargeForUser(
+  userId: string,
+  id: string,
+  patch: z.input<typeof debtInterestChargePatchSchema>
+) {
+  const parsed = debtInterestChargePatchSchema.parse(patch)
+  const cleanPatch: InterestChargePatch = {
+    ...(parsed.amount !== undefined && { amount: parsed.amount }),
+    ...(parsed.date !== undefined && { date: parsed.date }),
+    ...(parsed.source !== undefined && { source: parsed.source }),
+    ...('note' in patch && { note: parsed.note }),
+  }
+  const charge = await prisma.$transaction((tx) =>
+    updateInterestCharge(tx, userId, id, cleanPatch)
+  )
+
+  return { ...charge, amount: Number(charge.amount) }
+}
+
+export async function deleteDebtInterestCharge(id: string) {
+  const session = await getServerSession()
+  if (!session) throw new Error('Not authenticated')
+
+  await deleteDebtInterestChargeForUser(session.user.id, id)
+}
+
+export async function deleteDebtInterestChargeForUser(
+  userId: string,
+  id: string
+) {
+  await prisma.$transaction((tx) => revertInterestCharge(tx, userId, id))
 }

@@ -2,8 +2,9 @@
 
 import { deleteDebt, updateDebt } from '@/app/dashboard/debts/actions'
 import { useLanguage } from '@/components/language-provider'
+import { type InterestRateType } from '@/lib/debt-interest'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Loader, Percent, Trash2 } from 'lucide-react'
+import { Loader, Trash2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
@@ -25,7 +26,7 @@ import { CurrencyField } from '../ui/currency-field'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog'
 import { Form } from '../ui/form'
 import { TextField } from '../ui/text-field'
-import { AddDebtInterestDialog } from './add-debt-interest-dialog'
+import { InterestTermsFields } from './interest-terms-fields'
 import { useDashboardRefresh } from './refresh-provider'
 
 interface Debt {
@@ -35,6 +36,8 @@ interface Debt {
   minimumPayment: number | null
   paymentDueDay: number | null
   creditLimit: number | null
+  interestRate: number | null
+  interestRateType: InterestRateType | null
 }
 
 function toFormValues(debt: Debt | null) {
@@ -157,14 +160,10 @@ export function EditDebtDialog({
                 placeholder={t('debts.dayOfMonth')}
               />
             </div>
-            <AddDebtInterestDialog
-              debt={debt}
-              trigger={
-                <Button type="button" variant="outline" className="w-full">
-                  <Percent className="h-4 w-4" />
-                  {t('debts.addInterest')}
-                </Button>
-              }
+            <InterestTermsFields
+              key={`interest-${debt.id}-${debt.interestRate}-${debt.interestRateType}`}
+              interestRate={debt.interestRate}
+              interestRateType={debt.interestRateType}
             />
             <div className="flex gap-2">
               <AlertDialog>

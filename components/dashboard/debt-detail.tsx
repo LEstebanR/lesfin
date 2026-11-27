@@ -5,12 +5,20 @@ import { useLanguage } from '@/components/language-provider'
 import { formatMoney } from '@/lib/currency'
 import {
   useDebtInterestCharges,
+  useDebtLedger,
   useDebtPayments,
   useDebts,
   useTransactions,
 } from '@/lib/queries'
 import { cn } from '@/lib/utils'
-import { ArrowLeft, CreditCard, Landmark, Pencil } from 'lucide-react'
+import {
+  AlertTriangle,
+  ArrowLeft,
+  CreditCard,
+  Landmark,
+  Pencil,
+  Percent,
+} from 'lucide-react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useMemo, useState } from 'react'
@@ -28,6 +36,8 @@ import {
   TableHeader,
   TableRow,
 } from '../ui/table'
+import { AddDebtInterestDialog } from './add-debt-interest-dialog'
+import { DeleteDebtInterestButton } from './delete-debt-interest-button'
 import { DeleteDebtPaymentButton } from './delete-debt-payment-button'
 import { EditDebtDialog } from './edit-debt-dialog'
 import { EditDebtPaymentButton } from './edit-debt-payment-dialog'
@@ -56,8 +66,13 @@ export function DebtDetail() {
     useDebtInterestCharges(debtId)
   const { data: transactions = [], isLoading: loadingTransactions } =
     useTransactions()
+  const { data: ledger, isLoading: loadingLedger } = useDebtLedger(debtId)
   const loading =
-    loadingDebts || loadingPayments || loadingInterest || loadingTransactions
+    loadingDebts ||
+    loadingPayments ||
+    loadingInterest ||
+    loadingTransactions ||
+    loadingLedger
 
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [sort, setSort] = useState<'type' | 'description' | 'amount' | 'date'>(
@@ -70,6 +85,27 @@ export function DebtDetail() {
   const paymentsById = useMemo(
     () => new Map(payments.map((payment) => [payment.id, payment])),
     [payments]
+  )
+
+  const chargesById = useMemo(
+    () => new Map(interestCharges.map((charge) => [charge.id, charge])),
+    [interestCharges]
+  )
+  const takenPeriods = useMemo(
+    () => interestCharges.map((charge) => charge.period),
+    [interestCharges]
+  )
+
+  // Running balance after each movement, from the chronological ledger.
+  const balanceAfter = useMemo(
+    () =>
+      new Map(
+        (ledger?.entries ?? []).map((entry) => [
+          `${entry.kind}-${entry.id}`,
+          entry.balance,
+        ])
+      ),
+    [ledger]
   )
 
   const purchases = useMemo(
@@ -176,6 +212,35 @@ export function DebtDetail() {
   }
 
   const isPaidOff = debt.remainingBalance <= 0
+  const principal = debt.originalAmount + totalPurchases
+  const drift = ledger?.drift ?? 0
+
+  const projectionText = (() => {
+    const projection = debt.projection
+    switch (projection.status) {
+      case 'ok':
+        return t('debts.projection_ok', {
+          months: projection.months,
+          date: new Date(projection.payoffDate).toLocaleDateString(undefined, {
+            month: 'long',
+            year: 'numeric',
+            timeZone: 'UTC',
+          }),
+          interest: formatMoney(projection.totalInterest, currency),
+        })
+      case 'never':
+        return t('debts.projection_never', {
+          interest: formatMoney(projection.monthlyInterest, currency),
+        })
+      default:
+        return t(`debts.projection_${projection.status}`)
+    }
+  })()
+
+  const formatRate = (rate: number) =>
+    (Math.round(rate * 1e6) / 1e4).toLocaleString(undefined, {
+      maximumFractionDigits: 4,
+    })
 
   return (
     <div className="flex w-full flex-col items-center justify-center rounded-md p-4 md:mt-4 md:w-11/12 md:p-8">
@@ -221,19 +286,34 @@ export function DebtDetail() {
           >
             ${formatMoney(debt.remainingBalance, currency)}
           </p>
+          {Math.abs(drift) >= 0.01 && ledger && (
+            <p className="mt-2 flex items-start gap-2 text-sm text-amber-600">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              {t('debts.ledgerDrift', {
+                stored: formatMoney(ledger.storedBalance, currency),
+                drift: formatMoney(Math.abs(drift), currency),
+                rebuilt: formatMoney(ledger.balance, currency),
+              })}
+            </p>
+          )}
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">
-                {t('debts.totalPaid')}
+                {t('debts.principal')}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-xl font-bold text-green-600">
-                ${formatMoney(totalPaid, currency)}
+              <div className="text-xl font-bold">
+                ${formatMoney(principal, currency)}
               </div>
+              <p className="text-muted-foreground text-xs">
+                {t('debts.principalDesc')}
+                {totalPurchases > 0 &&
+                  ` · ${t('debts.totalPurchases')}: $${formatMoney(totalPurchases, currency)}`}
+              </p>
             </CardContent>
           </Card>
           <Card>
@@ -251,16 +331,57 @@ export function DebtDetail() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">
-                {t('debts.totalPurchases')}
+                {t('debts.totalPaid')}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-xl font-bold text-red-600">
-                ${formatMoney(totalPurchases, currency)}
+              <div className="text-xl font-bold text-green-600">
+                ${formatMoney(totalPaid, currency)}
               </div>
             </CardContent>
           </Card>
         </div>
+
+        <Card>
+          <CardHeader className="flex flex-row items-start justify-between gap-4 pb-2">
+            <div className="space-y-1">
+              <CardTitle className="text-sm font-medium">
+                {t('debts.projection')}
+              </CardTitle>
+              <p className="text-muted-foreground text-sm">
+                {debt.interestRate !== null && debt.interestRateType
+                  ? t('debts.rateSummary', {
+                      rate: formatRate(debt.interestRate),
+                      type: t(`debts.rateType_${debt.interestRateType}`),
+                      monthly: formatRate(debt.monthlyInterestRate ?? 0),
+                    })
+                  : t('debts.noRate')}
+                {debt.lastInterestCharge &&
+                  ` · ${t('debts.lastInterest', { period: debt.lastInterestCharge.period })}`}
+              </p>
+            </div>
+            {!isPaidOff && (
+              <AddDebtInterestDialog
+                debt={debt}
+                takenPeriods={takenPeriods}
+                trigger={
+                  <Button variant="outline" size="sm" className="shrink-0">
+                    <Percent className="h-4 w-4" />
+                    {t('debts.addInterest')}
+                  </Button>
+                }
+              />
+            )}
+          </CardHeader>
+          <CardContent className="space-y-1">
+            <p className="text-sm">{projectionText}</p>
+            {debt.projection.status === 'ok' && (
+              <p className="text-muted-foreground text-xs">
+                {t('debts.projectionNote')}
+              </p>
+            )}
+          </CardContent>
+        </Card>
 
         <div>
           <h2 className="text-lg font-semibold">{t('debts.movements')}</h2>
@@ -305,6 +426,9 @@ export function DebtDetail() {
                     >
                       {t('transactions.table.date')}
                     </SortableTableHead>
+                    <TableHead className="text-right">
+                      {t('debts.balance')}
+                    </TableHead>
                     <TableHead />
                   </TableRow>
                 </TableHeader>
@@ -334,7 +458,39 @@ export function DebtDetail() {
                           timeZone: 'UTC',
                         })}
                       </TableCell>
+                      <TableCell className="text-muted-foreground text-right">
+                        {balanceAfter.has(`${movement.type}-${movement.id}`) &&
+                          `$${formatMoney(
+                            balanceAfter.get(
+                              `${movement.type}-${movement.id}`
+                            )!,
+                            currency
+                          )}`}
+                      </TableCell>
                       <TableCell className="text-right">
+                        {movement.type === 'interest' &&
+                          chargesById.has(movement.id) && (
+                            <div className="flex items-center justify-end gap-1">
+                              <AddDebtInterestDialog
+                                debt={debt}
+                                charge={chargesById.get(movement.id)!}
+                                takenPeriods={takenPeriods}
+                                trigger={
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    aria-label={t('debts.editInterest')}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                }
+                              />
+                              <DeleteDebtInterestButton
+                                chargeId={movement.id}
+                              />
+                            </div>
+                          )}
                         {movement.type === 'payment' &&
                           paymentsById.has(movement.id) && (
                             <div className="flex items-center justify-end gap-1">

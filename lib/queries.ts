@@ -15,6 +15,7 @@ import {
 } from '@/app/dashboard/categories/actions'
 import {
   getDebtInterestCharges,
+  getDebtLedger,
   getDebtPayments,
   getDebts,
 } from '@/app/dashboard/debts/actions'
@@ -37,6 +38,7 @@ export const queryKeys = {
   debtPayments: (debtId: string) => ['debt-payments', debtId] as const,
   debtInterestCharges: (debtId: string) =>
     ['debt-interest-charges', debtId] as const,
+  debtLedger: (debtId: string) => ['debt-ledger', debtId] as const,
   subscriptions: ['subscriptions'] as const,
   categories: (type?: 'income' | 'expense') => ['categories', type] as const,
   subcategories: (categoryId: string) => ['subcategories', categoryId] as const,
@@ -80,6 +82,14 @@ export function useDebtInterestCharges(debtId: string) {
   return useQuery({
     queryKey: queryKeys.debtInterestCharges(debtId),
     queryFn: () => getDebtInterestCharges(debtId),
+    enabled: !!debtId,
+  })
+}
+
+export function useDebtLedger(debtId: string) {
+  return useQuery({
+    queryKey: queryKeys.debtLedger(debtId),
+    queryFn: () => getDebtLedger(debtId),
     enabled: !!debtId,
   })
 }
